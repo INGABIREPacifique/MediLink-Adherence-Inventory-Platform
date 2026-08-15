@@ -1,0 +1,228 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp } from 'lucide-react';
+import { alertsService } from '../services';
+import { formatElapsed, formatClockTime } from '../services/format';
+import { StatusBadge, DelayBadge } from '../components/ui/StatusBadge';
+import type { AlertsSummary, AlertStatus, EscalationAlert } from '../types';
+
+type FilterTab = 'all' | 'pending' | 'in_progress';
+
+const PAGE_SIZE = 10;
+
+export default function EscalationInbox() {
+  const [alerts, setAlerts] = useState<EscalationAlert[]>([]);
+  const [summary, setSummary] = useState<AlertsSummary | null>(null);
+  const [filter, setFilter] = useState<FilterTab>('all');
+  const [loading, setLoading] = useState(true);
+
+  async function refresh() {
+    const [a, s] = await Promise.all([alertsService.getAlerts(), alertsService.getSummary()]);
+    setAlerts(a);
+    setSummary(s);
+  }
+
+  useEffect(() => {
+    refresh().finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return alerts;
+    return alerts.filter((a) => a.status === filter);
+  }, [alerts, filter]);
+
+  const activeAlertsCount = useMemo(() => alerts.filter((a) => a.status !== 'resolved').length, [alerts]);
+
+  async function handleResolve(id: string) {
+    await alertsService.resolveAlert(id, 'Reached by phone, confirmed dose taken.');
+    refresh();
+  }
+
+  async function handleStartProgress(id: string) {
+    await alertsService.updateAlertStatus(id, 'in_progress' as AlertStatus);
+    refresh();
+  }
+
+  if (loading) {
+    return <div className="text-body">Loading escalation queue…</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-base text-ink">Escalation Inbox</h2>
+          <p className="max-w-2xl text-base text-body">
+            Manage urgent missed dose USSD alerts. Patients exceeding the 4-hour confirmation window require
+            immediate nursing follow-up.
+          </p>
+        </div>
+
+        <div className="flex items-stretch gap-4">
+          <div className="min-w-[160px] rounded border border-border bg-white p-[17px] shadow-sm">
+            <p className="pb-1 text-xs font-semibold uppercase tracking-wider text-body">Active Alerts</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[32px] font-bold leading-none text-danger">{activeAlertsCount}</span>
+              {summary && summary.activeDelta > 0 && (
+                <span className="flex items-center gap-1 rounded bg-danger-bg/50 px-1.5 py-0.5 text-sm text-danger">
+                  <TrendingUp size={12} />+{summary.activeDelta}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="min-w-[160px] rounded border border-border bg-white p-[17px] shadow-sm">
+            <p className="pb-1 text-xs font-semibold uppercase tracking-wider text-body">Resolved Today</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-bold leading-none text-success">{summary?.resolvedToday ?? 0}</span>
+              <span className="text-sm text-body">/ {summary?.totalToday ?? 0} total</span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#e2e2e9]">
+              <div
+                className="h-full rounded-full bg-success"
+                style={{
+                  width: summary ? `${Math.min(100, (summary.resolvedToday / (summary.totalToday || 1)) * 100)}%` : '0%',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full overflow-hidden rounded-lg border border-border bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-border bg-bg px-6 py-4">
+          <h3 className="text-xl font-semibold text-ink">Priority Action Queue</h3>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-bg p-[5px]">
+              {(['all', 'pending', 'in_progress'] as FilterTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setFilter(tab)}
+                  className={`rounded-xl px-3 py-1 text-xs font-semibold tracking-wide ${
+                    filter === tab ? 'bg-navy-light text-[#9bbdff]' : 'text-body'
+                  }`}
+                >
+                  {tab === 'all' ? 'All' : tab === 'pending' ? 'Pending' : 'In Progress'}
+                </button>
+              ))}
+            </div>
+            <button className="flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-body">
+              <SlidersHorizontal size={13} />
+              Filter
+            </button>
+          </div>
+        </div>
+
+        <div className="min-w-[800px] overflow-auto">
+          <table className="w-full">
+            <thead className="border-b border-border bg-bg">
+              <tr className="text-left text-xs font-semibold tracking-wide text-body">
+                <th className="px-6 py-3">Patient Details</th>
+                <th className="px-6 py-3">Medication Regimen</th>
+                <th className="px-6 py-3">Delay Duration</th>
+                <th className="px-6 py-3 text-center">Status</th>
+                <th className="px-6 py-3 text-right">Quick Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.slice(0, PAGE_SIZE).map((alert, i) => {
+                const resolved = alert.status === 'resolved';
+                return (
+                  <tr
+                    key={alert.id}
+                    className={`border-b border-border ${i % 2 === 1 ? 'bg-row-alt' : 'bg-white'} ${resolved ? 'opacity-75' : ''}`}
+                  >
+                    <td className="px-6 py-4">
+                      <p className={`text-sm font-semibold text-ink ${resolved ? 'line-through decoration-body' : ''}`}>
+                        {alert.patient.name}
+                      </p>
+                      {!resolved && (
+                        <p className="flex items-center gap-1 pt-0.5 text-xs font-medium text-body">
+                          <Phone size={11} />
+                          {alert.patient.phone}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {resolved ? (
+                        <p className="text-sm font-medium text-body">{alert.medication}</p>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-navy">{alert.medication}</p>
+                          <p className="text-xs font-medium text-body">{alert.phase}</p>
+                        </>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {resolved ? (
+                        <span className="text-sm font-medium text-body">
+                          Resolved at {alert.resolvedAt ? formatClockTime(alert.resolvedAt) : '—'}
+                        </span>
+                      ) : (
+                        <DelayBadge
+                          minutesLabel={formatElapsed(alert.missedAt)}
+                          urgent={alert.status === 'pending'}
+                        />
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <StatusBadge status={alert.status} />
+                    </td>
+                    <td className="px-6 py-4">
+                      {resolved ? (
+                        <div className="flex justify-end">
+                          <button className="text-xs font-semibold tracking-wide text-body underline decoration-border">
+                            View Log
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-2">
+                          <a
+                            href={`tel:${alert.patient.phone}`}
+                            aria-label={`Call ${alert.patient.name}`}
+                            className="rounded p-1.5 text-navy-light hover:bg-black/5"
+                          >
+                            <Phone size={15} />
+                          </a>
+                          <button
+                            onClick={() => handleStartProgress(alert.id)}
+                            aria-label="Log follow-up"
+                            disabled={alert.status === 'in_progress'}
+                            className={`rounded p-1.5 hover:bg-black/5 ${
+                              alert.status === 'in_progress' ? 'bg-[#d7e2ff] text-navy-light' : 'text-body'
+                            }`}
+                          >
+                            <MessageSquare size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleResolve(alert.id)}
+                            aria-label="Mark resolved"
+                            className="rounded p-1.5 text-success hover:bg-black/5"
+                          >
+                            <CheckCircle2 size={16.5} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-body">
+                    No alerts in this view.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border bg-bg px-6 py-3">
+          <p className="text-sm text-body">
+            Showing {Math.min(filtered.length, PAGE_SIZE)} of {filtered.length} alerts
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
