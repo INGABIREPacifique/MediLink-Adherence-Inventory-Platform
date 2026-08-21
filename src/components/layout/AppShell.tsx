@@ -3,8 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 import { GreetingBanner } from '../ui/GreetingBanner';
+import { useAuth } from '../../lib/AuthContext';
 
-// Per-route subtext -- keeps the banner honest about what's actually on
+// Per-route subtext — keeps the banner honest about what's actually on
 // screen instead of always saying "3 escalations" even on the Ward
 // Inventory page. Falls back to a generic line for any unmapped route.
 const routeSubtext: Record<string, string> = {
@@ -18,8 +19,15 @@ const routeSubtext: Record<string, string> = {
   '/settings': 'Escalation timing rules apply to all enrolled patients.',
 };
 
+const roleLabels: Record<string, string> = {
+  nurse: 'WARD NURSE · INTERNAL MEDICINE',
+  chw: 'COMMUNITY HEALTH WORKER',
+  admin: 'ADMINISTRATOR',
+};
+
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { profile } = useAuth();
   const subtext = routeSubtext[location.pathname] ?? 'Welcome back to MediLink Rwanda.';
 
   return (
@@ -29,8 +37,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <TopNav />
         <main className="flex-1 overflow-auto bg-bg p-10">
           <div className="mb-8">
-            {/* Placeholder identity -- no auth/session yet, see note in Sidebar/TopNav */}
-            <GreetingBanner roleLabel="WARD NURSE · INTERNAL MEDICINE" name="Uwase" subtext={subtext} />
+            <GreetingBanner
+              roleLabel={profile ? roleLabels[profile.role] : 'WARD NURSE · INTERNAL MEDICINE'}
+              name={profile?.full_name?.split(' ')[0] ?? 'there'}
+              subtext={subtext}
+            />
           </div>
           {children}
         </main>

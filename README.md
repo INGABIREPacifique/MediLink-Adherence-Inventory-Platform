@@ -27,6 +27,22 @@ npm run build   # production build to dist/
 npm run preview # preview the production build locally
 ```
 
+## Supabase setup (required — auth is now real, app won't load without it)
+
+1. In the Supabase dashboard for project `mjtgtwscipjctmuaxick`, open the
+   **SQL Editor** and run `supabase/migrations/0001_init.sql`.
+2. Go to **Project Settings → API**, copy the **Project URL** and **anon
+   public key** (safe for frontend code — never the `service_role` key).
+3. Create `.env.local` from `.env.example` and fill both values in.
+4. **Create your first user manually** — Supabase dashboard →
+   **Authentication → Users → Add user**. A `profiles` row is auto-created
+   for them (role defaults to `nurse` — change it in the `profiles` table
+   if needed).
+5. `npm run dev`, sign in with that user's email/password.
+
+Auth is real. Alerts/inventory/etc. still return mock data — see "Data
+layer" below for the next step.
+
 ## Architecture
 
 ```
