@@ -32,7 +32,7 @@ const navItems = [
   { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
   { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
   { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
-  { to: '/settings', label: 'Escalation Rules', icon: Settings },
+  { to: '/settings', label: 'System Settings', icon: Settings },
 ];
 
 export function Sidebar() {
