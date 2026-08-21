@@ -4,7 +4,7 @@ export function TopNav() {
   return (
     <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-10 shadow-sm">
       <div className="flex flex-1 items-center gap-6">
-        <h2 className="whitespace-nowrap text-[28px] font-bold leading-[1.1] tracking-[-0.5px] text-navy">
+        <h2 className="whitespace-nowrap text-[36px] font-bold leading-[1.1] tracking-[-0.9px] text-navy">
           HealthAdmin
           <br />
           Rwanda
