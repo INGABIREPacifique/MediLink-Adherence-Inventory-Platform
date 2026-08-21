@@ -7,7 +7,7 @@ import EscalationRulesConfig from './pages/EscalationRulesConfig';
 import ShiftHandover from './pages/ShiftHandover';
 import DailyPerformanceReport from './pages/DailyPerformanceReport';
 import PatientDischargeSummary from './pages/PatientDischargeSummary';
-import ComingSoon from './pages/ComingSoon';
+import AIForecasting from './pages/AIForecasting';
 
 // Pilot-phase routes only, matching MediLink_Rwanda.docx §2 scope and the
 // Figma "MVP-" screens. Full-platform routes (Ministry, Research Portal,
@@ -22,8 +22,7 @@ export default function App() {
           <Route path="/enrollment" element={<StaffRegistration />} />
           <Route path="/handover" element={<ShiftHandover />} />
           <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
-          {/* AI Forecasting activates once real consumption data exists (Phase 2, not Month 1) */}
-          <Route path="/forecasting" element={<ComingSoon title="AI Forecasting" />} />
+          <Route path="/forecasting" element={<AIForecasting />} />
           <Route path="/reports" element={<DailyPerformanceReport />} />
           <Route path="/settings" element={<EscalationRulesConfig />} />
         </Routes>
