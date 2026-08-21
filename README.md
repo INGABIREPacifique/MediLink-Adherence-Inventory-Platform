@@ -9,9 +9,10 @@ escalation and ward inventory management for hospital staff.
 - **Tailwind CSS v4**
 - **react-router-dom** for client-side routing
 - **lucide-react** for icons
-- Data layer abstracted behind `src/services/` — currently backed by in-memory
-  mock data (`src/data/`), designed to swap to Supabase with a one-line change
-  in `src/services/index.ts` once the backend is ready.
+- Data layer abstracted behind `src/services/` — Escalation Inbox and Ward
+  Inventory are wired to real Supabase tables; Rules/Handover/Reports are
+  still in-memory mock data, swappable one file at a time in
+  `src/services/index.ts`.
 
 ## Getting started
 
@@ -30,7 +31,9 @@ npm run preview # preview the production build locally
 ## Supabase setup (required — auth is now real, app won't load without it)
 
 1. In the Supabase dashboard for project `mjtgtwscipjctmuaxick`, open the
-   **SQL Editor** and run `supabase/migrations/0001_init.sql`.
+   **SQL Editor** and run `supabase/migrations/0001_init.sql`, then
+   `0003_seed_demo_data.sql` (populates demo patients/escalations/inventory
+   so the pilot screens aren't empty on first run).
 2. Go to **Project Settings → API**, copy the **Project URL** and **anon
    public key** (safe for frontend code — never the `service_role` key).
 3. Create `.env.local` from `.env.example` and fill both values in.
