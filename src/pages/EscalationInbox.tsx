@@ -3,7 +3,8 @@ import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp } fro
 import { alertsService } from '../services';
 import { formatElapsed, formatClockTime } from '../services/format';
 import { StatusBadge, DelayBadge } from '../components/ui/StatusBadge';
-import type { AlertsSummary, AlertStatus, EscalationAlert } from '../types';
+import { FollowUpLogModal } from '../components/modals/FollowUpLogModal';
+import type { AlertsSummary, EscalationAlert, FollowUpLogEntry } from '../types';
 
 type FilterTab = 'all' | 'pending' | 'in_progress';
 
@@ -14,6 +15,7 @@ export default function EscalationInbox() {
   const [summary, setSummary] = useState<AlertsSummary | null>(null);
   const [filter, setFilter] = useState<FilterTab>('all');
   const [loading, setLoading] = useState(true);
+  const [logModalAlert, setLogModalAlert] = useState<EscalationAlert | null>(null);
 
   async function refresh() {
     const [a, s] = await Promise.all([alertsService.getAlerts(), alertsService.getSummary()]);
@@ -37,8 +39,9 @@ export default function EscalationInbox() {
     refresh();
   }
 
-  async function handleStartProgress(id: string) {
-    await alertsService.updateAlertStatus(id, 'in_progress' as AlertStatus);
+  async function handleLogFollowUp(entry: Omit<FollowUpLogEntry, 'id' | 'alertId' | 'loggedAt'>) {
+    if (!logModalAlert) return;
+    await alertsService.logFollowUp(logModalAlert.id, entry);
     refresh();
   }
 
@@ -184,9 +187,8 @@ export default function EscalationInbox() {
                             <Phone size={15} />
                           </a>
                           <button
-                            onClick={() => handleStartProgress(alert.id)}
+                            onClick={() => setLogModalAlert(alert)}
                             aria-label="Log follow-up"
-                            disabled={alert.status === 'in_progress'}
                             className={`rounded p-1.5 hover:bg-black/5 ${
                               alert.status === 'in_progress' ? 'bg-[#d7e2ff] text-navy-light' : 'text-body'
                             }`}
@@ -223,6 +225,14 @@ export default function EscalationInbox() {
           </p>
         </div>
       </div>
+
+      {logModalAlert && (
+        <FollowUpLogModal
+          alert={logModalAlert}
+          onClose={() => setLogModalAlert(null)}
+          onSubmit={handleLogFollowUp}
+        />
+      )}
     </div>
   );
 }

@@ -8,14 +8,20 @@ import {
   AlertTriangle,
   LifeBuoy,
   LogOut,
+  UserPlus,
+  RefreshCcw,
+  FileCheck,
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/inventory', label: 'Stock Tracking', icon: Package },
+  { to: '/', label: 'Escalation Inbox', icon: LayoutDashboard },
+  { to: '/enrollment', label: 'Patient Enrollment', icon: UserPlus },
+  { to: '/inventory', label: 'Ward Inventory', icon: Package },
+  { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
+  { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
   { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/reports', label: 'Daily Report', icon: BarChart3 },
+  { to: '/settings', label: 'Escalation Rules', icon: Settings },
 ];
 
 export function Sidebar() {
