@@ -26,18 +26,18 @@ const navItems = [
 
 export function Sidebar() {
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col gap-4 border-r border-border bg-bg py-6 pl-4 pr-[17px]">
+    <aside className="flex h-screen w-64 shrink-0 flex-col gap-4 bg-gradient-to-b from-navy-700 via-navy-800 to-navy-950 py-6 pl-4 pr-[17px] shadow-lg">
       <div className="flex items-center gap-3 px-2 pb-8">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e7e8ef] text-lg font-bold text-navy">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg font-bold text-on-dark">
           RH
         </div>
         <div>
-          <h1 className="text-[28px] font-semibold leading-[28px] tracking-[-0.28px] text-navy">
+          <h1 className="text-[28px] font-semibold leading-[28px] tracking-[-0.28px] text-on-dark">
             Rwandan
             <br />
             Health
           </h1>
-          <p className="text-sm text-body">Admin Portal</p>
+          <p className="text-sm text-on-dark-muted">Admin Portal</p>
         </div>
       </div>
 
@@ -49,7 +49,9 @@ export function Sidebar() {
             end={to === '/'}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded px-4 py-3 text-base ${
-                isActive ? 'bg-[#80f98b]/20 font-bold text-navy' : 'text-body hover:bg-black/5'
+                isActive
+                  ? 'bg-white/15 font-bold text-on-dark'
+                  : 'text-on-dark-muted hover:bg-white/5 hover:text-on-dark'
               }`
             }
           >
@@ -65,12 +67,12 @@ export function Sidebar() {
           Emergency Alert
         </button>
 
-        <div className="flex flex-col gap-1 border-t border-border pt-4">
-          <a href="#" className="flex items-center gap-3 rounded px-4 py-2 text-sm text-body hover:bg-black/5">
+        <div className="flex flex-col gap-1 border-t border-on-dark-border pt-4">
+          <a href="#" className="flex items-center gap-3 rounded px-4 py-2 text-sm text-on-dark-muted hover:bg-white/5 hover:text-on-dark">
             <LifeBuoy size={15} />
             Support
           </a>
-          <a href="#" className="flex items-center gap-3 rounded px-4 py-2 text-sm text-body hover:bg-black/5">
+          <a href="#" className="flex items-center gap-3 rounded px-4 py-2 text-sm text-on-dark-muted hover:bg-white/5 hover:text-on-dark">
             <LogOut size={15} />
             Logout
           </a>

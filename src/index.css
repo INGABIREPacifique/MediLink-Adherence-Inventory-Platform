@@ -17,6 +17,17 @@
   --color-warning-bg: #624800;
   --color-warning-text: #eeb400;
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Dark-surface tokens — for the sidebar and greeting banner only.
+     Rest of the app (tables, forms, cards) stays on the light tokens above;
+     mixing a dark command-panel with light content surfaces is intentional,
+     not a partial dark-mode migration. */
+  --color-navy-950: #0a1330;   /* deepest gradient stop */
+  --color-navy-800: #0f1f4a;   /* mid gradient stop */
+  --color-navy-700: #16296b;   /* lightest gradient stop */
+  --color-on-dark: #ffffff;          /* primary text on dark surfaces */
+  --color-on-dark-muted: #9bb4e8;    /* secondary text on dark surfaces */
+  --color-on-dark-border: rgba(255, 255, 255, 0.12);
 }
 
 body {
