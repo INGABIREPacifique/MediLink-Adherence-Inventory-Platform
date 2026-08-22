@@ -56,8 +56,25 @@ npm run preview # preview the production build locally
    if needed).
 5. `npm run dev`, sign in with that user's email/password.
 
-Auth is real. Alerts/inventory/etc. still return mock data — see "Data
-layer" below for the next step.
+All five data domains (alerts, inventory, rules, handover, performance) are
+wired to real Supabase tables — see "Data layer" below.
+
+## AI escalation priority setup (optional but recommended)
+
+Implements the proposal's one specified AI feature for escalations
+(§4: "Missed-dose escalation priority — AI-assisted"). Without this, the
+Escalation Inbox still works fully — you'll just see an "AI Priority"
+button instead of a computed ranking until it's deployed.
+
+1. Get an Anthropic API key from https://console.anthropic.com (Settings → API Keys).
+2. In the Supabase dashboard, go to **Edge Functions** → **Deploy a new function** → name it `rank-escalation-priority`.
+3. Paste in the contents of `supabase/functions/rank-escalation-priority/index.ts`.
+4. Under the function's **Secrets**, add `ANTHROPIC_API_KEY` with your key. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are provided automatically by Supabase — you don't need to set those.
+5. Deploy. On the Escalation Inbox, click **"AI Priority"** next to any active alert's delay badge — it calls the function, which asks Claude to rank urgency based on medication risk, time missed, and the patient's escalation history, then writes the result back to that escalation.
+
+The missed-dose *trigger* itself stays rule-based (a fixed time window) —
+this only ranks priority for cases that already exist, exactly as the
+proposal scopes it. Nothing else in the app calls an LLM.
 
 ## Architecture
 

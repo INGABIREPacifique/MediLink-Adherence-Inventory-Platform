@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp } from 'lucide-react';
+import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { alertsService } from '../services';
+import { supabase } from '../lib/supabaseClient';
 import { formatElapsed, formatClockTime } from '../services/format';
 import { StatusBadge, DelayBadge } from '../components/ui/StatusBadge';
 import { FollowUpLogModal } from '../components/modals/FollowUpLogModal';
 import type { AlertsSummary, EscalationAlert, FollowUpLogEntry } from '../types';
+
+const priorityStyles: Record<NonNullable<EscalationAlert['aiPriority']>, string> = {
+  critical: 'bg-danger-bg text-danger-text',
+  high: 'bg-danger-bg/70 text-danger-text',
+  medium: 'bg-warning-bg text-warning-text',
+  low: 'bg-row-alt text-body',
+};
 
 type FilterTab = 'all' | 'pending' | 'in_progress';
 
@@ -16,6 +24,7 @@ export default function EscalationInbox() {
   const [filter, setFilter] = useState<FilterTab>('all');
   const [loading, setLoading] = useState(true);
   const [logModalAlert, setLogModalAlert] = useState<EscalationAlert | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   async function refresh() {
     const [a, s] = await Promise.all([alertsService.getAlerts(), alertsService.getSummary()]);
@@ -43,6 +52,22 @@ export default function EscalationInbox() {
     if (!logModalAlert) return;
     await alertsService.logFollowUp(logModalAlert.id, entry);
     refresh();
+  }
+
+  async function handleAnalyzePriority(escalationId: string) {
+    setAnalyzingId(escalationId);
+    try {
+      const { error } = await supabase.functions.invoke('rank-escalation-priority', {
+        body: { escalation_id: escalationId },
+      });
+      if (error) throw error;
+      await refresh();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('AI priority ranking failed -- is the rank-escalation-priority Edge Function deployed?', err);
+    } finally {
+      setAnalyzingId(null);
+    }
   }
 
   if (loading) {
@@ -161,10 +186,30 @@ export default function EscalationInbox() {
                           Resolved at {alert.resolvedAt ? formatClockTime(alert.resolvedAt) : '—'}
                         </span>
                       ) : (
-                        <DelayBadge
-                          minutesLabel={formatElapsed(alert.missedAt)}
-                          urgent={alert.status === 'pending'}
-                        />
+                        <div className="flex flex-col gap-1.5">
+                          <DelayBadge
+                            minutesLabel={formatElapsed(alert.missedAt)}
+                            urgent={alert.status === 'pending'}
+                          />
+                          {alert.aiPriority ? (
+                            <span
+                              title={alert.aiReasoning}
+                              className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityStyles[alert.aiPriority]}`}
+                            >
+                              <Sparkles size={9} />
+                              AI: {alert.aiPriority}
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleAnalyzePriority(alert.id)}
+                              disabled={analyzingId === alert.id}
+                              className="inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-navy-light hover:bg-black/5 disabled:opacity-50"
+                            >
+                              {analyzingId === alert.id ? <Loader2 size={9} className="animate-spin" /> : <Sparkles size={9} />}
+                              {analyzingId === alert.id ? 'Analyzing…' : 'AI Priority'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-6 py-4 text-center">
