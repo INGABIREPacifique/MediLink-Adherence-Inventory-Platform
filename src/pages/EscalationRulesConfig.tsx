@@ -1,7 +1,27 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, MessageSquare, TrendingDown, History, Plus, CheckCircle2 } from 'lucide-react';
-import { rulesService } from '../services';
-import type { EscalationRules } from '../types';
+import { rulesService, alertsService } from '../services';
+import type { EscalationRules, EscalationAlert } from '../types';
+
+function relativeTime(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+  return `${Math.round(hrs / 24)} day(s) ago`;
+}
+
+const statusIcon: Record<EscalationAlert['status'], React.ReactNode> = {
+  pending: <MessageSquare size={12} />,
+  in_progress: <TrendingDown size={12} />,
+  resolved: <CheckCircle2 size={12} className="text-success" />,
+};
+
+const statusLabel: Record<EscalationAlert['status'], string> = {
+  pending: 'SMS sent to Duty Nurse',
+  in_progress: 'Follow-up in progress',
+  resolved: 'Resolved',
+};
 
 // Matches Figma node 1:10485 "MVP Escalation Rules Configuration" exactly:
 // toggle-able IF/THEN rule cards (not a plain settings form) plus a live
@@ -10,11 +30,17 @@ import type { EscalationRules } from '../types';
 // AI-assisted (proposal §4) -- this screen configures the rule, not the AI.
 export default function EscalationRulesConfig() {
   const [rules, setRules] = useState<EscalationRules | null>(null);
+  const [recentEscalations, setRecentEscalations] = useState<EscalationAlert[]>([]);
   const [missedDoseEnabled, setMissedDoseEnabled] = useState(true);
   const [consecutiveMissesEnabled, setConsecutiveMissesEnabled] = useState(false);
 
   useEffect(() => {
     rulesService.getRules().then(setRules);
+    alertsService.getAlerts().then((alerts) =>
+      setRecentEscalations(
+        [...alerts].sort((a, b) => new Date(b.missedAt).getTime() - new Date(a.missedAt).getTime()).slice(0, 3)
+      )
+    );
   }, []);
 
   async function handleWindowChange(minutes: number) {
@@ -125,23 +151,23 @@ export default function EscalationRulesConfig() {
             <span className="rounded-full bg-danger-bg px-2.5 py-1 text-xs font-semibold text-danger-text">Live</span>
           </div>
           <div className="flex flex-col divide-y divide-border">
-            {[
-              { id: 'PT-8842', time: '10 mins ago', text: 'Missed USSD confirmation (4hr threshold reached).', status: 'SMS sent to Duty Nurse', icon: <MessageSquare size={12} /> },
-              { id: 'PT-2109', time: '45 mins ago', text: 'Missed USSD confirmation (4hr threshold reached).', status: 'Acknowledged by CHW', icon: <CheckCircle2 size={12} className="text-success" /> },
-              { id: 'PT-5531', time: '2 hrs ago', text: 'Consecutive Misses rule triggered (3 doses).', status: 'Added to Priority Queue', icon: <TrendingDown size={12} /> },
-            ].map((e) => (
-              <div key={e.id} className="px-5 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-ink">{e.id}</span>
-                  <span className="text-xs text-body">{e.time}</span>
+            {recentEscalations.length === 0 ? (
+              <p className="px-5 py-6 text-center text-sm text-body">No escalations yet.</p>
+            ) : (
+              recentEscalations.map((e) => (
+                <div key={e.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-ink">{e.patient.name}</span>
+                    <span className="text-xs text-body">{relativeTime(e.missedAt)}</span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-body">Missed dose: {e.medication} ({e.phase})</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-navy-light">
+                    {statusIcon[e.status]}
+                    {statusLabel[e.status]}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-sm text-body">{e.text}</p>
-                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-navy-light">
-                  {e.icon}
-                  {e.status}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="border-t border-border px-5 py-3 text-center">
             <button className="text-sm font-semibold text-navy-light">View All Escalations</button>

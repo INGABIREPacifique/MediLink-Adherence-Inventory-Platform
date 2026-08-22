@@ -9,10 +9,9 @@ escalation and ward inventory management for hospital staff.
 - **Tailwind CSS v4**
 - **react-router-dom** for client-side routing
 - **lucide-react** for icons
-- Data layer abstracted behind `src/services/` — Escalation Inbox and Ward
-  Inventory are wired to real Supabase tables; Rules/Handover/Reports are
-  still in-memory mock data, swappable one file at a time in
-  `src/services/index.ts`.
+- Data layer abstracted behind `src/services/` — all five domains (alerts,
+  inventory, rules, handover, performance) are wired to real Supabase
+  tables. Mock implementations still exist for offline dev/testing.
 
 ## Getting started
 
