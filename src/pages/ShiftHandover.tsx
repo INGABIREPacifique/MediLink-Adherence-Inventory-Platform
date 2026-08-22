@@ -38,14 +38,14 @@ export default function ShiftHandover() {
     setAcknowledged(true);
   }
 
-  if (loading) return <div className="text-body">Loading ward status…</div>;
+  if (loading) return <div className="text-body">Loading handover data…</div>;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between rounded-lg border border-border bg-white p-6 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-ink">Nurse Daily Handover</h1>
-          <p className="text-sm text-body">Internal Medicine Ward · Night to Morning Shift (07:00 – 15:00)</p>
+          <p className="text-sm text-body">Post-Discharge Monitoring Team · Shift Handover (07:00 – 15:00)</p>
         </div>
       </div>
 

@@ -1,7 +1,17 @@
 # MediLink Rwanda — Pilot MVP
 
-Web dashboard for the MediLink Rwanda pilot: post-discharge medication adherence
-escalation and ward inventory management for hospital staff.
+Web dashboard for the MediLink Rwanda pilot: **post-discharge** medication
+adherence escalation and hospital ward inventory management for hospital
+staff.
+
+**Important scope note:** every patient tracked in this system has already
+been **discharged** and is being monitored remotely from home via USSD/IVR/
+SMS dose confirmations — this is not an inpatient ward-management system.
+There are no bed numbers or bedside-shift concepts anywhere in the data
+model. "Shift Handover" refers to staff handing over pending post-discharge
+follow-up work (unresolved escalations, low stock), not inpatient bedside
+duties. Ward Inventory is the one legitimately hospital-side module — it
+tracks the facility's own drug stock, separate from patient monitoring.
 
 ## Stack
 
@@ -11,7 +21,9 @@ escalation and ward inventory management for hospital staff.
 - **lucide-react** for icons
 - Data layer abstracted behind `src/services/` — all five domains (alerts,
   inventory, rules, handover, performance) are wired to real Supabase
-  tables. Mock implementations still exist for offline dev/testing.
+  tables, including real dose-level adherence data (`dose_reminders`) for
+  the performance report and discharge summary — not proxies. Mock
+  implementations still exist for offline dev/testing.
 
 ## Getting started
 
@@ -30,9 +42,11 @@ npm run preview # preview the production build locally
 ## Supabase setup (required — auth is now real, app won't load without it)
 
 1. In the Supabase dashboard for project `mjtgtwscipjctmuaxick`, open the
-   **SQL Editor** and run `supabase/migrations/0001_init.sql`, then
-   `0003_seed_demo_data.sql` (populates demo patients/escalations/inventory
-   so the pilot screens aren't empty on first run).
+   **SQL Editor** and run these migrations **in order**:
+   `0001_init.sql` → `0003_seed_demo_data.sql` → `0004_dose_reminders.sql` →
+   `0005_seed_dose_reminders.sql`. The last two add real dose-level
+   adherence history (30 days per seeded patient) so the Daily Performance
+   Report and Discharge Summary compute real numbers instead of a proxy.
 2. Go to **Project Settings → API**, copy the **Project URL** and **anon
    public key** (safe for frontend code — never the `service_role` key).
 3. Create `.env.local` from `.env.example` and fill both values in.

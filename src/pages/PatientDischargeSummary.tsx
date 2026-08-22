@@ -1,44 +1,61 @@
+import { useEffect, useState } from 'react';
 import { ShieldCheck, Footprints, ClipboardList, Download, ArrowLeft } from 'lucide-react';
+import { getDischargeSummary, type DischargeSummaryData } from '../services/supabaseDischargeService';
 
 // Matches the content of Figma node 1:11639 "Patient Discharge Summary -
-// Completion Overview" -- circular adherence ring, "Next Steps" panel,
-// medication recap table. Figma renders this with "Patient Portal"
-// branding (a patient-facing login), but the pilot is staff-only per the
-// proposal (patients interact via USSD/IVR/SMS, not a web portal) -- so
-// this stays inside the staff shell as a summary a nurse reviews/prints
-// for the patient, not a separate patient login system.
-const medications = [
-  { name: 'Rifampicin / Isoniazid', dosage: '150mg / 75mg', frequency: 'Once daily', completed: true },
-  { name: 'Ethambutol', dosage: '400mg', frequency: 'Once daily', completed: true },
-];
+// Completion Overview" -- but computed from real dose_reminders data for a
+// seeded patient, not a hardcoded 92% mock object. Kept inside the staff
+// shell (Figma renders this screen with separate "Patient Portal" branding,
+// a patient-facing login) since the pilot is staff-only per the proposal --
+// this is a summary a nurse reviews/prints for the patient, not a real
+// patient login system.
+const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
+
+function consistencyLabel(pct: number): { label: string; message: string } {
+  if (pct >= 90) return { label: 'Excellent Consistency!', message: "You've successfully completed your monitored treatment period. Your dedication to the tracking protocol has significantly contributed to your health progress." };
+  if (pct >= 75) return { label: 'Good Progress', message: 'Your adherence is solid but there were a few missed confirmations. Keep up the daily routine.' };
+  return { label: 'Needs Follow-Up', message: 'Several doses were missed during this period. A follow-up conversation with your care team is recommended.' };
+}
 
 export default function PatientDischargeSummary() {
-  const adherenceRate = 92;
+  const [summary, setSummary] = useState<DischargeSummaryData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDischargeSummary(DEMO_PATIENT_ID).then((data) => {
+      setSummary(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div className="text-body">Loading summary…</div>;
+  if (!summary) return <div className="text-body">No monitoring data found for this patient.</div>;
+
+  const { label, message } = consistencyLabel(summary.adherenceRatePct);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold text-ink">Adherence Completion Summary</h1>
-        <p className="text-body">Jean-Baptiste Mugisha · Oct 1 – Oct 30, 2023</p>
+        <p className="text-body">
+          {summary.patientName} · {new Date(summary.monitoringStart).toLocaleDateString()} – {new Date(summary.monitoringEnd).toLocaleDateString()}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex items-center gap-8 rounded-lg border border-border bg-gradient-to-br from-success-bg/30 to-white p-8 shadow-sm">
           <div className="relative flex size-32 shrink-0 items-center justify-center rounded-full border-8 border-success">
             <div className="text-center">
-              <p className="text-3xl font-bold text-success-text">{adherenceRate}%</p>
+              <p className="text-3xl font-bold text-success-text">{summary.adherenceRatePct}%</p>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-body">Adherence</p>
             </div>
           </div>
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-ink">
               <ShieldCheck size={20} className="text-success" />
-              Excellent Consistency!
+              {label}
             </h2>
-            <p className="mt-2 text-sm text-body">
-              You've successfully completed your monitored treatment period. Your dedication to the tracking protocol
-              has significantly contributed to your health progress.
-            </p>
+            <p className="mt-2 text-sm text-body">{message}</p>
           </div>
         </div>
 
@@ -79,14 +96,14 @@ export default function PatientDischargeSummary() {
             </tr>
           </thead>
           <tbody>
-            {medications.map((m, i) => (
+            {summary.medications.map((m, i) => (
               <tr key={m.name} className={`border-b border-border last:border-0 ${i % 2 === 1 ? 'bg-row-alt' : ''}`}>
                 <td className="px-5 py-3 text-sm font-semibold text-navy-light">{m.name}</td>
                 <td className="px-5 py-3 text-sm text-body">{m.dosage}</td>
                 <td className="px-5 py-3 text-sm text-body">{m.frequency}</td>
                 <td className="px-5 py-3 text-right">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success-text">
-                    ✓ Completed
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${m.completed ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'}`}>
+                    {m.completed ? '✓ Completed' : 'In Progress'}
                   </span>
                 </td>
               </tr>
