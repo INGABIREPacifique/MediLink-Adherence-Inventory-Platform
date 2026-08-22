@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Settings,
   FileCheck,
+  Smartphone,
   HelpCircle,
   LogOut,
   Cross,
@@ -23,7 +24,7 @@ import { useAuth } from '../../lib/AuthContext';
 // screens disagree with each other on branding/nav; this file resolves that
 // by standardizing on one identity, then extends its 5-item nav (Stock
 // Tracking / AI Forecasting / Patient Adherence / CHW Escalations / Facility
-// Analytics) to cover all 8 real pilot routes in the same visual style.
+// Analytics) to cover all real pilot routes in the same visual style.
 const navItems = [
   { to: '/inventory', label: 'Stock Tracking', icon: Package },
   { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
@@ -32,6 +33,7 @@ const navItems = [
   { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
   { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
   { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
+  { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
   { to: '/settings', label: 'System Settings', icon: Settings },
 ];
 

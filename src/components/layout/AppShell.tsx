@@ -16,6 +16,7 @@ const routeSubtext: Record<string, string> = {
   '/forecasting': 'AI forecasting activates once enough consumption data exists.',
   '/reports': 'Today\u2019s post-discharge adherence and stock summary.',
   '/settings': 'Escalation timing rules apply to all enrolled patients.',
+  '/ussd-simulator': 'Simulating the patient-facing USSD confirmation flow.',
 };
 
 const roleLabels: Record<string, string> = {

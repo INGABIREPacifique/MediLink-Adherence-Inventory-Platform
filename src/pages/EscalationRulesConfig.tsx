@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, MessageSquare, TrendingDown, History, Plus, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, MessageSquare, TrendingDown, History, Plus, CheckCircle2, RefreshCw } from 'lucide-react';
 import { rulesService, alertsService } from '../services';
+import { supabase } from '../lib/supabaseClient';
 import type { EscalationRules, EscalationAlert } from '../types';
 
 function relativeTime(iso: string): string {
@@ -33,14 +34,37 @@ export default function EscalationRulesConfig() {
   const [recentEscalations, setRecentEscalations] = useState<EscalationAlert[]>([]);
   const [missedDoseEnabled, setMissedDoseEnabled] = useState(true);
   const [consecutiveMissesEnabled, setConsecutiveMissesEnabled] = useState(false);
+  const [runningCheck, setRunningCheck] = useState(false);
+  const [lastCheckResult, setLastCheckResult] = useState<string | null>(null);
+
+  async function refreshRecent() {
+    const alerts = await alertsService.getAlerts();
+    setRecentEscalations(
+      [...alerts].sort((a, b) => new Date(b.missedAt).getTime() - new Date(a.missedAt).getTime()).slice(0, 3)
+    );
+  }
+
+  async function handleRunCheck() {
+    setRunningCheck(true);
+    setLastCheckResult(null);
+    try {
+      const [{ error: e1 }, { error: e2 }] = await Promise.all([
+        supabase.rpc('check_missed_doses'),
+        supabase.rpc('check_upcoming_appointments'),
+      ]);
+      if (e1 || e2) throw e1 ?? e2;
+      setLastCheckResult(`Checked at ${new Date().toLocaleTimeString()} -- any newly missed doses or unconfirmed appointments were escalated.`);
+      await refreshRecent();
+    } catch (err) {
+      setLastCheckResult(`Check failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRunningCheck(false);
+    }
+  }
 
   useEffect(() => {
     rulesService.getRules().then(setRules);
-    alertsService.getAlerts().then((alerts) =>
-      setRecentEscalations(
-        [...alerts].sort((a, b) => new Date(b.missedAt).getTime() - new Date(a.missedAt).getTime()).slice(0, 3)
-      )
-    );
+    refreshRecent();
   }, []);
 
   async function handleWindowChange(minutes: number) {
@@ -61,6 +85,14 @@ export default function EscalationRulesConfig() {
           <p className="text-body">Manage automated alert rules for patient adherence monitoring.</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleRunCheck}
+            disabled={runningCheck}
+            className="flex items-center gap-2 rounded-lg border border-navy-light bg-white px-4 py-2.5 text-sm font-semibold text-navy-light disabled:opacity-50"
+          >
+            <RefreshCw size={15} className={runningCheck ? 'animate-spin' : ''} />
+            {runningCheck ? 'Checking…' : 'Run Escalation Check'}
+          </button>
           <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body">
             <History size={15} />
             Audit Log
@@ -71,6 +103,12 @@ export default function EscalationRulesConfig() {
           </button>
         </div>
       </div>
+
+      {lastCheckResult && (
+        <p className={`rounded-lg border px-4 py-3 text-sm ${lastCheckResult.startsWith('Check failed') ? 'border-danger/30 bg-danger-bg/40 text-danger-text' : 'border-success/30 bg-success-bg/40 text-success-text'}`}>
+          {lastCheckResult}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-4">

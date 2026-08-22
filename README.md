@@ -44,9 +44,14 @@ npm run preview # preview the production build locally
 1. In the Supabase dashboard for project `mjtgtwscipjctmuaxick`, open the
    **SQL Editor** and run these migrations **in order**:
    `0001_init.sql` → `0003_seed_demo_data.sql` → `0004_dose_reminders.sql` →
-   `0005_seed_dose_reminders.sql`. The last two add real dose-level
-   adherence history (30 days per seeded patient) so the Daily Performance
-   Report and Discharge Summary compute real numbers instead of a proxy.
+   `0005_seed_dose_reminders.sql` → `0006_auto_escalation_engine.sql`. The
+   last one builds the real rule-based engine that automatically detects
+   missed doses and upcoming unconfirmed appointments — without it,
+   escalations only exist if seeded by hand.
+   - If `0006` errors on `create extension pg_cron` (some Supabase plans
+     restrict this), skip that line and the two `cron.schedule(...)` lines —
+     everything else still works via the **"Run Escalation Check"** button
+     on the Escalation Rules page, which calls the same functions on demand.
 2. Go to **Project Settings → API**, copy the **Project URL** and **anon
    public key** (safe for frontend code — never the `service_role` key).
 3. Create `.env.local` from `.env.example` and fill both values in.

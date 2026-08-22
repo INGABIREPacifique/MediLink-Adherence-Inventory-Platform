@@ -9,6 +9,7 @@ import ShiftHandover from './pages/ShiftHandover';
 import DailyPerformanceReport from './pages/DailyPerformanceReport';
 import PatientDischargeSummary from './pages/PatientDischargeSummary';
 import AIForecasting from './pages/AIForecasting';
+import UssdSimulator from './pages/UssdSimulator';
 
 // Pilot-phase routes only, matching MediLink_Rwanda.docx §2 scope and the
 // Figma "MVP-" screens. Full-platform routes (Ministry, Research Portal,
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/handover" element={<ShiftHandover />} />
             <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
             <Route path="/forecasting" element={<AIForecasting />} />
+            <Route path="/ussd-simulator" element={<UssdSimulator />} />
             <Route path="/reports" element={<DailyPerformanceReport />} />
             <Route path="/settings" element={<EscalationRulesConfig />} />
           </Routes>
