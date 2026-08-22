@@ -1,22 +1,24 @@
 import { Search, Bell, HelpCircle } from 'lucide-react';
+import { useAuth } from '../../lib/AuthContext';
 
+// Branding lives in the sidebar (Health Administration / Kigali Central
+// Hospital) -- repeating a second, different brand name here ("HealthAdmin
+// Rwanda") was both redundant and the source of a layout bug: the two-line
+// 36px logo text was taller than the 64px header, causing it to overlap
+// the search bar next to it. Removed; this bar is now just search + actions.
 export function TopNav() {
+  const { profile } = useAuth();
+  const initial = profile?.full_name?.trim()?.[0]?.toUpperCase() ?? '?';
+
   return (
     <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-10 shadow-sm">
-      <div className="flex flex-1 items-center gap-6">
-        <h2 className="whitespace-nowrap text-[36px] font-bold leading-[1.1] tracking-[-0.9px] text-navy">
-          HealthAdmin
-          <br />
-          Rwanda
-        </h2>
-        <div className="relative w-full max-w-md">
-          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-body" />
-          <input
-            type="text"
-            placeholder="Search patients, ID, or medications..."
-            className="w-full rounded-xl border border-border bg-bg py-2.5 pl-10 pr-4 text-sm text-body outline-none focus:ring-2 focus:ring-navy-light/40"
-          />
-        </div>
+      <div className="relative w-full max-w-md">
+        <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-body" />
+        <input
+          type="text"
+          placeholder="Search patients, ID, or medications..."
+          className="w-full rounded-xl border border-border bg-bg py-2.5 pl-10 pr-4 text-sm text-body outline-none focus:ring-2 focus:ring-navy-light/40"
+        />
       </div>
 
       <div className="flex items-center gap-2">
@@ -30,7 +32,12 @@ export function TopNav() {
         <button aria-label="Help" className="flex items-center justify-center rounded-xl p-2 hover:bg-black/5">
           <HelpCircle size={20} className="text-body" />
         </button>
-        <div className="ml-4 size-8 overflow-hidden rounded-xl border border-border bg-[#e7e8ef]" />
+        <div
+          title={profile?.full_name}
+          className="ml-4 flex size-8 items-center justify-center overflow-hidden rounded-xl border border-border bg-navy text-xs font-bold text-white"
+        >
+          {initial}
+        </div>
       </div>
     </header>
   );
