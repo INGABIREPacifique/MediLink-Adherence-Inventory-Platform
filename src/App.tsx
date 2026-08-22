@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { useAuth } from './lib/AuthContext';
 import EscalationInbox from './pages/EscalationInbox';
 import WardInventory from './pages/WardInventory';
 import StaffRegistration from './pages/StaffRegistration';
@@ -10,6 +11,19 @@ import DailyPerformanceReport from './pages/DailyPerformanceReport';
 import PatientDischargeSummary from './pages/PatientDischargeSummary';
 import AIForecasting from './pages/AIForecasting';
 import UssdSimulator from './pages/UssdSimulator';
+import ChwHome from './pages/chw/ChwHome';
+import ChwPatients from './pages/chw/ChwPatients';
+import ChwVisitLog from './pages/chw/ChwVisitLog';
+
+// "/" renders a different screen depending on the logged-in user's role --
+// same desktop shell for everyone, role-based content, per direction:
+// "built it as desktop but for roles of CHW... different components or
+// navbar" rather than a separate mobile app.
+function RoleAwareHome() {
+  const { profile } = useAuth();
+  if (profile?.role === 'chw') return <ChwHome />;
+  return <EscalationInbox />;
+}
 
 // Pilot-phase routes only, matching MediLink_Rwanda.docx §2 scope and the
 // Figma "MVP-" screens. Full-platform routes (Ministry, Research Portal,
@@ -20,7 +34,7 @@ export default function App() {
       <ProtectedRoute>
         <AppShell>
           <Routes>
-            <Route path="/" element={<EscalationInbox />} />
+            <Route path="/" element={<RoleAwareHome />} />
             <Route path="/inventory" element={<WardInventory />} />
             <Route path="/enrollment" element={<StaffRegistration />} />
             <Route path="/handover" element={<ShiftHandover />} />
@@ -29,6 +43,8 @@ export default function App() {
             <Route path="/ussd-simulator" element={<UssdSimulator />} />
             <Route path="/reports" element={<DailyPerformanceReport />} />
             <Route path="/settings" element={<EscalationRulesConfig />} />
+            <Route path="/chw/patients" element={<ChwPatients />} />
+            <Route path="/chw/visit-log" element={<ChwVisitLog />} />
           </Routes>
         </AppShell>
       </ProtectedRoute>

@@ -17,6 +17,8 @@ const routeSubtext: Record<string, string> = {
   '/reports': 'Today\u2019s post-discharge adherence and stock summary.',
   '/settings': 'Escalation timing rules apply to all enrolled patients.',
   '/ussd-simulator': 'Simulating the patient-facing USSD confirmation flow.',
+  '/chw/patients': 'Patients enrolled in the post-discharge adherence program.',
+  '/chw/visit-log': 'Record and review home visits.',
 };
 
 const roleLabels: Record<string, string> = {
@@ -28,7 +30,10 @@ const roleLabels: Record<string, string> = {
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { profile } = useAuth();
-  const subtext = routeSubtext[location.pathname] ?? 'Welcome back to MediLink Rwanda.';
+  const isChwHome = location.pathname === '/' && profile?.role === 'chw';
+  const subtext = isChwHome
+    ? 'Your priority tasks and today\u2019s visit summary.'
+    : routeSubtext[location.pathname] ?? 'Welcome back to MediLink Rwanda.';
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg">

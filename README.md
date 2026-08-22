@@ -64,6 +64,21 @@ npm run preview # preview the production build locally
 All five data domains (alerts, inventory, rules, handover, performance) are
 wired to real Supabase tables — see "Data layer" below.
 
+## Trying out the CHW role
+
+The app renders different content based on the logged-in user's role
+(nurse/admin vs CHW) inside the same desktop shell — not a separate app.
+To see the CHW view:
+
+1. Run `supabase/migrations/0007_chw_visits.sql` (adds the `chw_visits` table).
+2. In Supabase dashboard → **Authentication → Users → Add user**, create a
+   second test login.
+3. In **Table Editor → profiles**, find that new user's row and change
+   `role` from `nurse` to `chw`.
+4. Log out and back in as that user — the sidebar switches to Home / My
+   Patients / Visit Log, and `/` shows the CHW-specific overview instead
+   of the nurse's Escalation Inbox.
+
 ## AI escalation priority setup (optional but recommended)
 
 Implements the proposal's one specified AI feature for escalations
