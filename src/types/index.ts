@@ -78,7 +78,7 @@ export interface EnrollmentDraft {
   phone: string;
   preferredChannel: 'ussd' | 'ivr' | 'sms';
   language: 'rw' | 'en' | 'fr';
-  prescription: PrescriptionSchedule;
+  medications: PrescriptionSchedule[]; // most discharged patients take more than one -- each tracked and confirmed separately
   nextFollowUpDate: string;
 }
 

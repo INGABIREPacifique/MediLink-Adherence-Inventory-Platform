@@ -24,16 +24,36 @@ import { useAuth } from '../../lib/AuthContext';
 // user's role, per the person's explicit direction: "built it as desktop
 // but for roles of CHW... this system might have different roles which
 // will include different components or navbar."
-const nurseAdminNav = [
-  { to: '/inventory', label: 'Stock Tracking', icon: Package },
-  { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
-  { to: '/enrollment', label: 'Patient Adherence', icon: UserCheck },
-  { to: '/', label: 'CHW Escalations', icon: AlertTriangle, end: true },
-  { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
-  { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
-  { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
-  { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
-  { to: '/settings', label: 'System Settings', icon: Settings },
+// Grouped by actual usage pattern rather than the order items happened to
+// get built in -- daily clinical work first, then periodic reporting,
+// then occasional tools/admin. Was a flat 9-item list before, which mixed
+// "used every day" (Escalations, Enrollment, Stock) with "used rarely"
+// (System Settings, USSD Simulator) in no particular order.
+const nurseAdminNavGroups: { section: string; items: { to: string; label: string; icon: typeof Package; end?: boolean }[] }[] = [
+  {
+    section: 'Daily Work',
+    items: [
+      { to: '/', label: 'CHW Escalations', icon: AlertTriangle, end: true },
+      { to: '/enrollment', label: 'Patient Adherence', icon: UserCheck },
+      { to: '/inventory', label: 'Stock Tracking', icon: Package },
+      { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
+    ],
+  },
+  {
+    section: 'Reports',
+    items: [
+      { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
+      { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
+      { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
+    ],
+  },
+  {
+    section: 'Tools & Admin',
+    items: [
+      { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
+      { to: '/settings', label: 'System Settings', icon: Settings },
+    ],
+  },
 ];
 
 // Matches Figma's CHW Field App content (node 1:2014 Home, 1:2293 Patient
@@ -56,8 +76,25 @@ export function Sidebar() {
   const { signOut, profile } = useAuth();
   const role = profile?.role ?? 'nurse';
   const isChw = role === 'chw';
-  const navItems = isChw ? chwNav : nurseAdminNav;
   const brand = brandByRole[role] ?? brandByRole.nurse;
+
+  function renderLink({ to, label, icon: Icon, end }: { to: string; label: string; icon: typeof Package; end?: boolean }) {
+    return (
+      <NavLink
+        key={to}
+        to={to}
+        end={end}
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded px-3 py-2.5 text-sm ${
+            isActive ? 'bg-[rgba(128,249,139,0.35)] font-semibold text-navy' : 'text-body hover:bg-black/5'
+          }`
+        }
+      >
+        <Icon size={17} />
+        {label}
+      </NavLink>
+    );
+  }
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col gap-4 border-r border-border bg-bg py-6 pl-4 pr-[17px]">
@@ -79,22 +116,15 @@ export function Sidebar() {
         {isChw ? 'Log Visit' : 'New Entry'}
       </NavLink>
 
-      <nav className="mt-2 flex flex-col gap-1">
-        {navItems.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded px-3 py-2.5 text-sm ${
-                isActive ? 'bg-[rgba(128,249,139,0.35)] font-semibold text-navy' : 'text-body hover:bg-black/5'
-              }`
-            }
-          >
-            <Icon size={17} />
-            {label}
-          </NavLink>
-        ))}
+      <nav className="mt-2 flex flex-1 flex-col gap-4 overflow-y-auto">
+        {isChw
+          ? chwNav.map(renderLink)
+          : nurseAdminNavGroups.map((group) => (
+              <div key={group.section} className="flex flex-col gap-1">
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-body/70">{group.section}</p>
+                {group.items.map(renderLink)}
+              </div>
+            ))}
       </nav>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-border pt-4">
