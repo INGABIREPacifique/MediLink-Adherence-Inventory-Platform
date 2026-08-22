@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, SlidersHorizontal, ArrowUpDown, Minus, Plus, Download } from 'lucide-react';
 import { inventoryService } from '../services';
+import { getMonthlyStockReport } from '../services/supabaseReportService';
+import { downloadCsv } from '../lib/exportCsv';
 import type { InventoryItem, InventorySummary, StockStatus } from '../types';
 
 // Matches Figma node 1:10655 "MVP Ward Inventory - Stock Log & Alerts"
@@ -18,6 +20,17 @@ export default function WardInventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const report = await getMonthlyStockReport();
+      downloadCsv(`medilink-monthly-stock-report-${new Date().toISOString().slice(0, 10)}.csv`, report);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function refresh() {
     const [i, s] = await Promise.all([inventoryService.getItems(), inventoryService.getSummary()]);
@@ -45,9 +58,13 @@ export default function WardInventory() {
           <h1 className="text-3xl font-bold text-ink">Ward Inventory</h1>
           <p className="text-body">Manage physical stock levels and manual reorder thresholds.</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-navy-light">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-navy-light disabled:opacity-50"
+        >
           <Download size={15} />
-          Export Ledger
+          {exporting ? 'Generating…' : 'Export Monthly Report (CSV)'}
         </button>
       </div>
 

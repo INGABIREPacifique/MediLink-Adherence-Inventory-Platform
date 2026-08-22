@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { ClipboardCheck, TrendingUp, Package, CheckCircle2, Download } from 'lucide-react';
 import { performanceService, inventoryService, alertsService } from '../services';
 import { getSevenDayAdherenceTrend, getTodayDoseCounts } from '../services/supabasePerformanceService';
+import { getAdherenceReportForToday } from '../services/supabaseReportService';
+import { downloadCsv } from '../lib/exportCsv';
 import type { DailyPerformance, InventoryItem, EscalationAlert } from '../types';
 
 // Matches Figma node 1:11180 "MVP Daily Performance Report" structurally,
@@ -17,6 +19,17 @@ export default function DailyPerformanceReport() {
   const [lowStock, setLowStock] = useState<InventoryItem[]>([]);
   const [resolvedRecently, setResolvedRecently] = useState<EscalationAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const report = await getAdherenceReportForToday();
+      downloadCsv(`medilink-daily-adherence-report-${report.date}.csv`, [report]);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -47,9 +60,13 @@ export default function DailyPerformanceReport() {
             {new Date(data.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body shadow-sm">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body shadow-sm disabled:opacity-50"
+        >
           <Download size={15} />
-          Export PDF
+          {exporting ? 'Generating…' : 'Export CSV'}
         </button>
       </div>
 

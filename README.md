@@ -64,6 +64,21 @@ npm run preview # preview the production build locally
 All five data domains (alerts, inventory, rules, handover, performance) are
 wired to real Supabase tables — see "Data layer" below.
 
+## Report generation
+
+Run `supabase/migrations/0008_seed_stock_movements.sql` for realistic 30-day
+consumption/reorder history (otherwise the monthly report will look sparse
+since real movement data only accumulates from actual Stock-In/Stock-Out
+clicks). Two real exports now work:
+- **Ward Inventory → "Export Monthly Report (CSV)"** — per the proposal
+  §3.2: consumption, remaining stock, expiring batches, and reorder history
+  per medication, last 30 days.
+- **Daily Performance Report → "Export CSV"** — today's scheduled/confirmed/
+  missed dose counts and escalations opened.
+
+Both generate real CSV files client-side from live Supabase data — no
+external report-generation service involved.
+
 ## Trying out the CHW role
 
 The app renders different content based on the logged-in user's role
