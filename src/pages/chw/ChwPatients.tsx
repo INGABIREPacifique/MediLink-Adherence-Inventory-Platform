@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Phone, History } from 'lucide-react';
 import { getChwPatients, type ChwPatient } from '../../services/supabaseChwService';
 
 // Matches Figma node 1:2293 "CHW Field App - Patient Registry" content.
-// Note: no per-CHW patient assignment exists in the schema yet, so this
-// lists all enrolled patients at the facility -- worth adding a real
-// assignment column before rolling out to multiple CHWs.
+// Scoped by patients.assigned_chw_id -- see getChwPatients in
+// supabaseChwService.ts for how unassigned vs assigned patients are shown.
 export default function ChwPatients() {
   const [patients, setPatients] = useState<ChwPatient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,10 +43,16 @@ export default function ChwPatients() {
                 <td className="px-6 py-3 text-sm text-body">{p.phone}</td>
                 <td className="px-6 py-3 text-sm text-body">{new Date(p.enrolledAt).toLocaleDateString()}</td>
                 <td className="px-6 py-3 text-right">
-                  <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-light">
-                    <Phone size={13} />
-                    Call
-                  </a>
+                  <div className="flex items-center justify-end gap-3">
+                    <Link to={`/patients/${p.id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-light">
+                      <History size={13} />
+                      History
+                    </Link>
+                    <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-light">
+                      <Phone size={13} />
+                      Call
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}

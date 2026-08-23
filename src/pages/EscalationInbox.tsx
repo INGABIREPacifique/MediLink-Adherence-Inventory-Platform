@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { alertsService } from '../services';
 import { supabase } from '../lib/supabaseClient';
@@ -160,9 +161,13 @@ export default function EscalationInbox() {
                     className={`border-b border-border ${i % 2 === 1 ? 'bg-row-alt' : 'bg-white'} ${resolved ? 'opacity-75' : ''}`}
                   >
                     <td className="px-6 py-4">
-                      <p className={`text-sm font-semibold text-ink ${resolved ? 'line-through decoration-body' : ''}`}>
-                        {alert.patient.name}
-                      </p>
+                      {resolved ? (
+                        <p className="text-sm font-semibold text-ink line-through decoration-body">{alert.patient.name}</p>
+                      ) : (
+                        <Link to={`/patients/${alert.patient.id}`} className="text-sm font-semibold text-ink hover:text-navy-light hover:underline">
+                          {alert.patient.name}
+                        </Link>
+                      )}
                       {!resolved && (
                         <p className="flex items-center gap-1 pt-0.5 text-xs font-medium text-body">
                           <Phone size={11} />

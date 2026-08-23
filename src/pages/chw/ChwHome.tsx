@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, CalendarCheck, Users, Phone, Footprints } from 'lucide-react';
 import { getChwOverview, getPriorityTasks, logChwVisit, type ChwOverview } from '../../services/supabaseChwService';
 import type { EscalationAlert } from '../../types';
@@ -86,7 +87,9 @@ export default function ChwHome() {
                     {task.patient.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                   </span>
                   <div>
-                    <p className="text-sm font-bold text-ink">{task.patient.name}</p>
+                    <p className="text-sm font-bold text-ink">
+                      <Link to={`/patients/${task.patient.id}`} className="hover:text-navy-light hover:underline">{task.patient.name}</Link>
+                    </p>
                     <p className="text-xs text-body">{task.patient.phone}</p>
                   </div>
                 </div>

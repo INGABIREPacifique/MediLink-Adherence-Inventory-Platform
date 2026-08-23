@@ -35,6 +35,7 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
     items: [
       { to: '/', label: 'CHW Escalations', icon: AlertTriangle, end: true },
       { to: '/enrollment', label: 'Patient Adherence', icon: UserCheck },
+      { to: '/patients', label: 'Patient Directory', icon: Users },
       { to: '/inventory', label: 'Stock Tracking', icon: Package },
       { to: '/handover', label: 'Shift Handover', icon: RefreshCcw },
     ],
@@ -128,10 +129,10 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-border pt-4">
-        <a href="#" className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5">
+        <NavLink to="/help" className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5">
           <HelpCircle size={15} />
           Help Center
-        </a>
+        </NavLink>
         <button
           onClick={() => signOut()}
           className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5"
