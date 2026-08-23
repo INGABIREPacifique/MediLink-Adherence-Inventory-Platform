@@ -18,10 +18,10 @@ import type { EnrollmentService } from './enrollmentService';
 // Production note: a real system would also run a small daily job to keep
 // extending dose_reminders forward (this only pre-generates 30 days at
 // enrollment time) -- documented here rather than silently left out.
-export async function enrollPatient(draft: EnrollmentDraft): Promise<Patient> {
+export async function enrollPatient(draft: EnrollmentDraft, assignedChwId?: string | null): Promise<Patient> {
   const { data: patient, error: patientError } = await supabase
     .from('patients')
-    .insert({ name: draft.patientName, phone: draft.phone })
+    .insert({ name: draft.patientName, phone: draft.phone, assigned_chw_id: assignedChwId ?? null })
     .select('id, name, phone')
     .single();
   if (patientError || !patient) throw patientError ?? new Error('Failed to create patient');

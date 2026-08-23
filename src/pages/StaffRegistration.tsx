@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UserPlus, ClipboardList, Check, Plus, Trash2 } from 'lucide-react';
 import { enrollmentService } from '../services';
+import { supabase } from '../lib/supabaseClient';
 import type { EnrollmentDraft, PrescriptionSchedule } from '../types';
 
 const DOSE_SLOTS = [
@@ -32,9 +33,15 @@ const emptyDraft: EnrollmentDraft = {
 export default function StaffRegistration() {
   const [draft, setDraft] = useState<EnrollmentDraft>(emptyDraft);
   const [nationalId, setNationalId] = useState('');
+  const [chwList, setChwList] = useState<{ id: string; full_name: string }[]>([]);
+  const [assignedChwId, setAssignedChwId] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [enrolled, setEnrolled] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, full_name').eq('role', 'chw').then(({ data }) => setChwList(data ?? []));
+  }, []);
 
   function updateMedication(index: number, patch: Partial<PrescriptionSchedule>) {
     setDraft((d) => ({
@@ -69,10 +76,11 @@ export default function StaffRegistration() {
     setSubmitting(true);
     setError(null);
     try {
-      const patient = await enrollmentService.enrollPatient(draft);
+      const patient = await enrollmentService.enrollPatient(draft, assignedChwId || null);
       setEnrolled(patient.name);
       setDraft(emptyDraft);
       setNationalId('');
+      setAssignedChwId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enrollment failed. Please try again.');
     } finally {
@@ -189,6 +197,17 @@ export default function StaffRegistration() {
             Next Follow-up Date
             <input type="date" required value={draft.nextFollowUpDate} onChange={(e) => setDraft({ ...draft, nextFollowUpDate: e.target.value })}
               className="w-fit rounded border border-border bg-bg px-3 py-2.5 text-base font-normal text-ink" />
+          </label>
+
+          <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-body">
+            Assign Community Health Worker (optional)
+            <select value={assignedChwId} onChange={(e) => setAssignedChwId(e.target.value)}
+              className="w-fit min-w-[240px] rounded border border-border bg-bg px-3 py-2.5 text-base font-normal text-ink">
+              <option value="">Unassigned -- visible to any CHW</option>
+              {chwList.map((chw) => (
+                <option key={chw.id} value={chw.id}>{chw.full_name}</option>
+              ))}
+            </select>
           </label>
         </div>
 

@@ -21,14 +21,14 @@ export interface ChwVisit {
   outcome: 'visited' | 'unreachable' | 'rescheduled';
   notes: string;
   visitedAt: string;
+  loggedByName: string;
 }
 
 // Backs the CHW role's Home/Patients/Visit Log screens -- real Supabase
 // queries, same tables the nurse dashboard uses (escalations, patients,
 // appointments), no separate "CHW data" that could drift from the truth.
-// Note: there's no per-CHW patient assignment in the schema yet, so
-// "My Patients" currently means all enrolled patients at the facility --
-// worth adding a real assignment column before multi-CHW rollout.
+// Patients are scoped per-CHW via patients.assigned_chw_id (unassigned
+// patients remain visible to any CHW -- see getChwPatients below).
 
 export async function getChwOverview(): Promise<ChwOverview> {
   const [{ count: urgentVisitsCount }, { count: followUpsTodayCount }, { count: totalPatientsCount }] =
@@ -92,26 +92,29 @@ export async function getChwPatients(): Promise<ChwPatient[]> {
 export async function getChwVisits(): Promise<ChwVisit[]> {
   const { data, error } = await supabase
     .from('chw_visits')
-    .select('id, patient_id, outcome, notes, visited_at, patients:patient_id ( name )')
+    .select('id, patient_id, outcome, notes, visited_at, patients:patient_id ( name ), profiles:logged_by ( full_name )')
     .order('visited_at', { ascending: false })
     .limit(20);
   if (error) throw error;
-  return ((data ?? []) as unknown as { id: string; patient_id: string; outcome: ChwVisit['outcome']; notes: string | null; visited_at: string; patients: { name: string } | null }[]).map((r) => ({
+  return ((data ?? []) as unknown as { id: string; patient_id: string; outcome: ChwVisit['outcome']; notes: string | null; visited_at: string; patients: { name: string } | null; profiles: { full_name: string } | null }[]).map((r) => ({
     id: r.id,
     patientId: r.patient_id,
     patientName: r.patients?.name ?? 'Unknown',
     outcome: r.outcome,
     notes: r.notes ?? '',
     visitedAt: r.visited_at,
+    loggedByName: r.profiles?.full_name ?? 'Unknown staff',
   }));
 }
 
 export async function logChwVisit(patientId: string, outcome: ChwVisit['outcome'], notes: string, escalationId?: string): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
   const { error } = await supabase.from('chw_visits').insert({
     patient_id: patientId,
     escalation_id: escalationId ?? null,
     outcome,
     notes,
+    logged_by: userData.user?.id ?? null, // was never set before -- every visit was anonymous
   });
   if (error) throw error;
 }

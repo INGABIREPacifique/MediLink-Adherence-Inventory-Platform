@@ -1,13 +1,26 @@
+import { useEffect, useState } from 'react';
 import { Radio, TrendingUp, Clock } from 'lucide-react';
-import { mockInventory } from '../data/mockInventory';
+import { inventoryService } from '../services';
+import type { InventoryItem } from '../types';
 
 // AI Forecasting -- per the proposal (§4, §10 Risks & Mitigations): demand
 // forecasting is real AI, but it only activates "as consumption data
 // accumulates" -- deliberately NOT faked with synthetic numbers for the
-// pilot. This screen shows what the feature will look like once wired to
-// the ai-service `/forecast/demand` endpoint, using the current rule-based
-// reorder thresholds as the honest fallback in the meantime.
+// pilot. This screen shows what the feature will look like once built,
+// using the current REAL rule-based reorder thresholds as the honest
+// fallback in the meantime -- previously this table showed hardcoded mock
+// inventory instead of the actual ward stock.
 export default function AIForecasting() {
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    inventoryService.getItems().then((i) => {
+      setItems(i);
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -43,26 +56,31 @@ export default function AIForecasting() {
             </tr>
           </thead>
           <tbody>
-            {mockInventory.map((item, i) => (
-              <tr key={item.id} className={`border-b border-border ${i % 2 === 1 ? 'bg-row-alt' : 'bg-white'}`}>
-                <td className="px-6 py-4 text-sm font-semibold text-ink">{item.name}</td>
-                <td className="px-6 py-4 text-sm text-body">{item.currentStock} {item.unit}</td>
-                <td className="px-6 py-4 text-sm text-body">{item.reorderThreshold}</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-body">
-                    <Clock size={12} />
-                    Awaiting consumption data
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <tr><td colSpan={4} className="px-6 py-6 text-center text-sm text-body">Loading…</td></tr>
+            ) : (
+              items.map((item, i) => (
+                <tr key={item.id} className={`border-b border-border ${i % 2 === 1 ? 'bg-row-alt' : 'bg-white'}`}>
+                  <td className="px-6 py-4 text-sm font-semibold text-ink">{item.name}</td>
+                  <td className="px-6 py-4 text-sm text-body">{item.currentStock} {item.unit}</td>
+                  <td className="px-6 py-4 text-sm text-body">{item.reorderThreshold}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-body">
+                      <Clock size={12} />
+                      Awaiting consumption data
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="flex items-center gap-2 text-xs text-body">
         <TrendingUp size={14} />
-        Backend endpoint ready at <code className="rounded bg-row-alt px-1.5 py-0.5">ai-service/forecast/demand</code> -- returns real predictions once wired to Supabase consumption history.
+        When built, this would follow the same pattern as AI escalation priority: a Supabase Edge Function
+        (not a separate backend service) calling Claude with real consumption history from <code className="rounded bg-row-alt px-1.5 py-0.5">stock_movements</code>.
       </div>
     </div>
   );

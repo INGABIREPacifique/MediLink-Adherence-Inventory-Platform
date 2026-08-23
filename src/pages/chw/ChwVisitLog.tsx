@@ -95,6 +95,7 @@ export default function ChwVisitLog() {
                 <div>
                   <p className="text-sm font-semibold text-ink">{v.patientName}</p>
                   <p className="text-xs text-body">{v.notes || 'No notes'}</p>
+                  <p className="text-xs text-body">Logged by {v.loggedByName}</p>
                 </div>
                 <div className="text-right">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${outcomeStyles[v.outcome]}`}>{v.outcome}</span>
