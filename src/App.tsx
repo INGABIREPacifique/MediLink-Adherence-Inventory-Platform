@@ -42,6 +42,7 @@ export default function App() {
             <Route path="/enrollment" element={<StaffRegistration />} />
             <Route path="/handover" element={<ShiftHandover />} />
             <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
+            <Route path="/discharge-summary/:patientId" element={<PatientDischargeSummary />} />
             <Route path="/forecasting" element={<AIForecasting />} />
             <Route path="/ussd-simulator" element={<UssdSimulator />} />
             <Route path="/reports" element={<DailyPerformanceReport />} />

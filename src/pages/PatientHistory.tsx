@@ -46,9 +46,17 @@ export default function PatientHistoryPage() {
         Back
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold text-ink">{history.patient.name}</h1>
-        <p className="text-body">{history.patient.phone}</p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-ink">{history.patient.name}</h1>
+          <p className="text-body">{history.patient.phone}</p>
+        </div>
+        <Link
+          to={`/discharge-summary/${history.patient.id}`}
+          className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-navy-light shadow-sm"
+        >
+          View Discharge Summary
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

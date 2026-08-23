@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ClipboardCheck, TrendingUp, Package, CheckCircle2, Download } from 'lucide-react';
 import { performanceService, inventoryService, alertsService } from '../services';
 import { getSevenDayAdherenceTrend, getTodayDoseCounts } from '../services/supabasePerformanceService';
@@ -164,7 +165,7 @@ export default function DailyPerformanceReport() {
                       <CheckCircle2 size={12} />
                     </span>
                     <p className="text-sm text-ink">
-                      <span className="font-semibold">{log?.loggedBy ?? 'Staff'}</span> confirmed {a.patient.name}'s dose via {log?.method ?? 'follow-up'} after a missed USSD reminder.
+                      <span className="font-semibold">{log?.loggedBy ?? 'Staff'}</span> confirmed <Link to={`/patients/${a.patient.id}`} className="font-semibold text-navy-light hover:underline">{a.patient.name}</Link>'s dose via {log?.method ?? 'follow-up'} after a missed USSD reminder.
                       <span className="mt-1 block text-xs text-body">{a.resolvedAt ? new Date(a.resolvedAt).toLocaleString() : ''}</span>
                     </p>
                   </div>

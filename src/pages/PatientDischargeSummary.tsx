@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { ShieldCheck, Footprints, ClipboardList, Download, ArrowLeft } from 'lucide-react';
 import { getDischargeSummary, type DischargeSummaryData } from '../services/supabaseDischargeService';
+import { downloadCsv } from '../lib/exportCsv';
 
 // Matches the content of Figma node 1:11639 "Patient Discharge Summary -
-// Completion Overview" -- but computed from real dose_reminders data for a
-// seeded patient, not a hardcoded 92% mock object. Kept inside the staff
-// shell (Figma renders this screen with separate "Patient Portal" branding,
-// a patient-facing login) since the pilot is staff-only per the proposal --
-// this is a summary a nurse reviews/prints for the patient, not a real
-// patient login system.
+// Completion Overview" -- computed from real dose_reminders data. Kept
+// inside the staff shell (Figma renders this screen with separate "Patient
+// Portal" branding, a patient-facing login) since the pilot is staff-only
+// per the proposal -- this is a summary a nurse reviews/prints for the
+// patient, not a real patient login system.
+//
+// Was hardcoded to always show one demo patient regardless of who was
+// actually being discharged -- now takes :patientId from the route
+// (reached via "View Discharge Summary" on a patient's history page),
+// falling back to the original seeded demo patient only when opened
+// directly from the sidebar with no specific patient in mind.
 const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
 
 function consistencyLabel(pct: number): { label: string; message: string } {
@@ -18,20 +25,38 @@ function consistencyLabel(pct: number): { label: string; message: string } {
 }
 
 export default function PatientDischargeSummary() {
+  const { patientId } = useParams<{ patientId?: string }>();
   const [summary, setSummary] = useState<DischargeSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDischargeSummary(DEMO_PATIENT_ID).then((data) => {
+    getDischargeSummary(patientId ?? DEMO_PATIENT_ID).then((data) => {
       setSummary(data);
       setLoading(false);
     });
-  }, []);
+  }, [patientId]);
 
   if (loading) return <div className="text-body">Loading summary…</div>;
   if (!summary) return <div className="text-body">No monitoring data found for this patient.</div>;
 
   const { label, message } = consistencyLabel(summary.adherenceRatePct);
+
+  function handleDownload() {
+    if (!summary) return;
+    downloadCsv(
+      `discharge-summary-${summary.patientName.replace(/\s+/g, '-').toLowerCase()}.csv`,
+      summary.medications.map((m) => ({
+        patient: summary.patientName,
+        monitoring_start: summary.monitoringStart,
+        monitoring_end: summary.monitoringEnd,
+        overall_adherence_pct: summary.adherenceRatePct,
+        medication: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        completed: m.completed ? 'Yes' : 'In Progress',
+      }))
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,11 +138,11 @@ export default function PatientDischargeSummary() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body">
+        <Link to="/patients" className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body">
           <ArrowLeft size={15} />
-          Back to Patient Registry
-        </button>
-        <button className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm">
+          Back to Patient Directory
+        </Link>
+        <button onClick={handleDownload} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm">
           <Download size={15} />
           Download Full Report
         </button>
