@@ -17,6 +17,7 @@ import ChwVisitLog from './pages/chw/ChwVisitLog';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
+import AuditLog from './pages/AuditLog';
 
 // "/" renders a different screen depending on the logged-in user's role --
 // same desktop shell for everyone, role-based content, per direction:
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/patients" element={<PatientDirectory />} />
             <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
             <Route path="/help" element={<HelpGuide />} />
+            <Route path="/audit-log" element={<AuditLog />} />
           </Routes>
         </AppShell>
       </ProtectedRoute>

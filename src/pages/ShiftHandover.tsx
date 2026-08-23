@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, Package, Phone, CheckCircle2 } from 'lucide-react';
 import { handoverService, alertsService, inventoryService } from '../services';
 import type { EscalationAlert, InventoryItem } from '../types';
@@ -120,9 +121,9 @@ export default function ShiftHandover() {
                 </div>
               ))
             )}
-            <button className="mt-2 rounded-lg border border-border py-2 text-sm font-semibold text-body">
+            <Link to="/inventory" className="mt-2 block rounded-lg border border-border py-2 text-center text-sm font-semibold text-body">
               View Full Inventory
-            </button>
+            </Link>
           </div>
         </div>
       </div>

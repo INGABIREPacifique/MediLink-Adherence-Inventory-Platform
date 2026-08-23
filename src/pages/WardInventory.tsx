@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, SlidersHorizontal, ArrowUpDown, Minus, Plus, Download } from 'lucide-react';
+import { AlertTriangle, ArrowUpDown, Minus, Plus, Download } from 'lucide-react';
 import { inventoryService } from '../services';
 import { getMonthlyStockReport } from '../services/supabaseReportService';
 import { downloadCsv } from '../lib/exportCsv';
@@ -21,6 +21,7 @@ export default function WardInventory() {
   const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [sortAsc, setSortAsc] = useState(true);
 
   async function handleExport() {
     setExporting(true);
@@ -101,18 +102,19 @@ export default function WardInventory() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-ink">Active Formularies</h2>
-        <div className="flex gap-2">
-          <button aria-label="Sort" className="rounded-lg border border-border bg-white p-2 text-body hover:bg-black/5">
-            <ArrowUpDown size={15} />
-          </button>
-          <button aria-label="Filter" className="rounded-lg border border-border bg-white p-2 text-body hover:bg-black/5">
-            <SlidersHorizontal size={15} />
-          </button>
-        </div>
+        <button
+          onClick={() => setSortAsc((v) => !v)}
+          aria-label="Sort by name"
+          title={`Sort ${sortAsc ? 'Z to A' : 'A to Z'}`}
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-body hover:bg-black/5"
+        >
+          <ArrowUpDown size={14} />
+          {sortAsc ? 'A → Z' : 'Z → A'}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => {
+        {[...items].sort((a, b) => (sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name))).map((item) => {
           const pill = statusPill[item.status];
           return (
             <div

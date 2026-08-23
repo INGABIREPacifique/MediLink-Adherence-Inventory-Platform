@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, MessageSquare, CheckCircle2, SlidersHorizontal, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
+import { Phone, MessageSquare, CheckCircle2, TrendingUp, Sparkles, Loader2, Eye } from 'lucide-react';
 import { alertsService } from '../services';
 import { supabase } from '../lib/supabaseClient';
 import { formatElapsed, formatClockTime } from '../services/format';
 import { StatusBadge, DelayBadge } from '../components/ui/StatusBadge';
 import { FollowUpLogModal } from '../components/modals/FollowUpLogModal';
+import { ViewLogModal } from '../components/modals/ViewLogModal';
 import type { AlertsSummary, EscalationAlert, FollowUpLogEntry } from '../types';
 
 const priorityStyles: Record<NonNullable<EscalationAlert['aiPriority']>, string> = {
@@ -25,6 +26,7 @@ export default function EscalationInbox() {
   const [filter, setFilter] = useState<FilterTab>('all');
   const [loading, setLoading] = useState(true);
   const [logModalAlert, setLogModalAlert] = useState<EscalationAlert | null>(null);
+  const [viewLogAlert, setViewLogAlert] = useState<EscalationAlert | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   async function refresh() {
@@ -134,10 +136,6 @@ export default function EscalationInbox() {
                 </button>
               ))}
             </div>
-            <button className="flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-body">
-              <SlidersHorizontal size={13} />
-              Filter
-            </button>
           </div>
         </div>
 
@@ -223,7 +221,11 @@ export default function EscalationInbox() {
                     <td className="px-6 py-4">
                       {resolved ? (
                         <div className="flex justify-end">
-                          <button className="text-xs font-semibold tracking-wide text-body underline decoration-border">
+                          <button
+                            onClick={() => setViewLogAlert(alert)}
+                            className="flex items-center gap-1 text-xs font-semibold tracking-wide text-navy-light underline decoration-border"
+                          >
+                            <Eye size={12} />
                             View Log
                           </button>
                         </div>
@@ -283,6 +285,7 @@ export default function EscalationInbox() {
           onSubmit={handleLogFollowUp}
         />
       )}
+      {viewLogAlert && <ViewLogModal alert={viewLogAlert} onClose={() => setViewLogAlert(null)} />}
     </div>
   );
 }

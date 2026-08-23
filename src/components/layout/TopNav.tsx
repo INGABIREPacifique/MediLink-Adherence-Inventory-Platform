@@ -1,4 +1,5 @@
 import { Search, Bell, HelpCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 
 // Branding lives in the sidebar (Health Administration / Kigali Central
@@ -29,9 +30,9 @@ export function TopNav() {
           <Bell size={20} className="text-body" />
           <span className="absolute right-1.5 top-1.5 size-2 rounded-full border border-white bg-danger" />
         </button>
-        <button aria-label="Help" className="flex items-center justify-center rounded-xl p-2 hover:bg-black/5">
+        <Link to="/help" aria-label="Help" className="flex items-center justify-center rounded-xl p-2 hover:bg-black/5">
           <HelpCircle size={20} className="text-body" />
-        </button>
+        </Link>
         <div
           title={profile?.full_name}
           className="ml-4 flex size-8 items-center justify-center overflow-hidden rounded-xl border border-border bg-navy text-xs font-bold text-white"

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, MessageSquare, TrendingDown, History, Plus, CheckCircle2, RefreshCw } from 'lucide-react';
 import { rulesService, alertsService } from '../services';
 import { supabase } from '../lib/supabaseClient';
@@ -100,11 +101,15 @@ export default function EscalationRulesConfig() {
             <RefreshCw size={15} className={runningCheck ? 'animate-spin' : ''} />
             {runningCheck ? 'Checking…' : 'Run Escalation Check'}
           </button>
-          <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body">
+          <Link to="/audit-log" className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body">
             <History size={15} />
             Audit Log
-          </button>
-          <button className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm">
+          </Link>
+          <button
+            disabled
+            title="Custom rule creation isn't built yet -- the two rules below cover the pilot's rule-based logic (proposal §4)."
+            className="flex cursor-not-allowed items-center gap-2 rounded-lg bg-navy/40 px-4 py-2.5 text-sm font-semibold text-white/70"
+          >
             <Plus size={15} />
             New Rule
           </button>
@@ -207,7 +212,7 @@ export default function EscalationRulesConfig() {
             )}
           </div>
           <div className="border-t border-border px-5 py-3 text-center">
-            <button className="text-sm font-semibold text-navy-light">View All Escalations</button>
+            <Link to="/" className="text-sm font-semibold text-navy-light">View All Escalations</Link>
           </div>
         </div>
       </div>
