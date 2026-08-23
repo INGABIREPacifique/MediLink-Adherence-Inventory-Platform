@@ -3,13 +3,15 @@ import type { EscalationRules } from '../types';
 import type { RulesService } from './rulesService';
 
 // Real Supabase-backed implementation, querying the single-row
-// `escalation_rules` table seeded in 0001_init.sql (missed_dose_window_minutes
-// defaults to 240 = 4h, per pilot protocol).
+// `escalation_rules` table (0001_init.sql + consecutive-misses columns
+// added in 0010_chw_assignment_and_recurring_engine.sql).
 
 interface RulesRow {
   id: string;
   missed_dose_window_minutes: number;
   second_reminder_delay_minutes: number;
+  consecutive_misses_enabled: boolean;
+  consecutive_misses_threshold: number;
   updated_by: string | null;
   updated_at: string;
 }
@@ -19,6 +21,8 @@ function mapRow(row: RulesRow): EscalationRules {
     facilityId: 'kigali-central-internal-medicine', // single-facility pilot, not yet a real FK
     missedDoseWindowMinutes: row.missed_dose_window_minutes,
     secondReminderDelayMinutes: row.second_reminder_delay_minutes,
+    consecutiveMissesEnabled: row.consecutive_misses_enabled,
+    consecutiveMissesThreshold: row.consecutive_misses_threshold,
     updatedBy: row.updated_by ?? 'System Default',
     updatedAt: row.updated_at,
   };
@@ -39,6 +43,8 @@ export const supabaseRulesService: RulesService = {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (update.missedDoseWindowMinutes !== undefined) patch.missed_dose_window_minutes = update.missedDoseWindowMinutes;
     if (update.secondReminderDelayMinutes !== undefined) patch.second_reminder_delay_minutes = update.secondReminderDelayMinutes;
+    if (update.consecutiveMissesEnabled !== undefined) patch.consecutive_misses_enabled = update.consecutiveMissesEnabled;
+    if (update.consecutiveMissesThreshold !== undefined) patch.consecutive_misses_threshold = update.consecutiveMissesThreshold;
 
     const { data, error } = await supabase
       .from('escalation_rules')

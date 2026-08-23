@@ -5,6 +5,8 @@ let rules: EscalationRules = {
   facilityId: 'kigali-central-internal-medicine',
   missedDoseWindowMinutes: 240, // 4 hours, per pilot protocol default
   secondReminderDelayMinutes: 60,
+  consecutiveMissesEnabled: false,
+  consecutiveMissesThreshold: 3,
   updatedBy: 'System Default',
   updatedAt: new Date().toISOString(),
 };

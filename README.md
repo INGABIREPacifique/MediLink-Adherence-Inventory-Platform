@@ -66,6 +66,16 @@ wired to real Supabase tables — see "Data layer" below.
 
 ## Report generation
 
+## Security (role-based access)
+
+Run `supabase/migrations/0009_role_based_rls.sql` to tighten Row-Level
+Security from "any authenticated staff sees/edits everything" to real
+role-based access, per the proposal's own risk mitigation (§10). After
+this: nurses/admins can manage inventory, escalation rules, and shift
+handovers; CHWs can read the same data but can't edit those (their nav
+doesn't expose those screens anyway); both roles can read patients/
+escalations/appointments and confirm doses via the USSD Simulator.
+
 Run `supabase/migrations/0008_seed_stock_movements.sql` for realistic 30-day
 consumption/reorder history (otherwise the monthly report will look sparse
 since real movement data only accumulates from actual Stock-In/Stock-Out
@@ -85,7 +95,9 @@ The app renders different content based on the logged-in user's role
 (nurse/admin vs CHW) inside the same desktop shell — not a separate app.
 To see the CHW view:
 
-1. Run `supabase/migrations/0007_chw_visits.sql` (adds the `chw_visits` table).
+1. Run `supabase/migrations/0007_chw_visits.sql` (adds the `chw_visits` table)
+   and `0010_chw_assignment_and_recurring_engine.sql` (adds per-CHW patient
+   assignment).
 2. In Supabase dashboard → **Authentication → Users → Add user**, create a
    second test login.
 3. In **Table Editor → profiles**, find that new user's row and change
@@ -93,6 +105,9 @@ To see the CHW view:
 4. Log out and back in as that user — the sidebar switches to Home / My
    Patients / Visit Log, and `/` shows the CHW-specific overview instead
    of the nurse's Escalation Inbox.
+5. Optional: in **Table Editor → patients**, set `assigned_chw_id` on a
+   patient to that CHW's user id to scope "My Patients" to just them —
+   patients with `assigned_chw_id` left null are visible to any CHW.
 
 ## AI escalation priority setup (optional but recommended)
 

@@ -73,7 +73,18 @@ export async function getPriorityTasks(): Promise<EscalationAlert[]> {
 }
 
 export async function getChwPatients(): Promise<ChwPatient[]> {
-  const { data, error } = await supabase.from('patients').select('id, name, phone, enrolled_at').order('name');
+  const { data: userData } = await supabase.auth.getUser();
+  const currentUserId = userData.user?.id;
+
+  // Shows patients assigned to this CHW, plus any unassigned patients
+  // (assigned_chw_id is null) -- so a single-CHW pilot still sees
+  // everyone, but once a second CHW is added, assigned patients stay
+  // scoped to the right person instead of showing to both.
+  const { data, error } = await supabase
+    .from('patients')
+    .select('id, name, phone, enrolled_at')
+    .or(`assigned_chw_id.is.null,assigned_chw_id.eq.${currentUserId}`)
+    .order('name');
   if (error) throw error;
   return (data ?? []).map((p) => ({ id: p.id, name: p.name, phone: p.phone, enrolledAt: p.enrolled_at }));
 }

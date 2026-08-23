@@ -88,6 +88,8 @@ export interface EscalationRules {
   facilityId: string;
   missedDoseWindowMinutes: number; // default 240 (4h), per pilot doc
   secondReminderDelayMinutes: number; // default 60
+  consecutiveMissesEnabled: boolean;
+  consecutiveMissesThreshold: number;
   updatedBy: string;
   updatedAt: string;
 }

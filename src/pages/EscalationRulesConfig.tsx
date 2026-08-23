@@ -32,8 +32,6 @@ const statusLabel: Record<EscalationAlert['status'], string> = {
 export default function EscalationRulesConfig() {
   const [rules, setRules] = useState<EscalationRules | null>(null);
   const [recentEscalations, setRecentEscalations] = useState<EscalationAlert[]>([]);
-  const [missedDoseEnabled, setMissedDoseEnabled] = useState(true);
-  const [consecutiveMissesEnabled, setConsecutiveMissesEnabled] = useState(false);
   const [runningCheck, setRunningCheck] = useState(false);
   const [lastCheckResult, setLastCheckResult] = useState<string | null>(null);
 
@@ -48,18 +46,27 @@ export default function EscalationRulesConfig() {
     setRunningCheck(true);
     setLastCheckResult(null);
     try {
-      const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      const results = await Promise.all([
         supabase.rpc('check_missed_doses'),
         supabase.rpc('check_upcoming_appointments'),
+        supabase.rpc('check_consecutive_misses'),
+        supabase.rpc('generate_upcoming_dose_reminders'),
       ]);
-      if (e1 || e2) throw e1 ?? e2;
-      setLastCheckResult(`Checked at ${new Date().toLocaleTimeString()} -- any newly missed doses or unconfirmed appointments were escalated.`);
+      const failed = results.find((r) => r.error);
+      if (failed) throw failed.error;
+      setLastCheckResult(`Checked at ${new Date().toLocaleTimeString()} -- missed doses, unconfirmed appointments, and consecutive-miss patterns were all evaluated, and upcoming dose reminders were extended forward.`);
       await refreshRecent();
     } catch (err) {
       setLastCheckResult(`Check failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setRunningCheck(false);
     }
+  }
+
+  async function toggleConsecutiveMisses() {
+    if (!rules) return;
+    const updated = await rulesService.updateRules({ consecutiveMissesEnabled: !rules.consecutiveMissesEnabled });
+    setRules(updated);
   }
 
   useEffect(() => {
@@ -120,13 +127,7 @@ export default function EscalationRulesConfig() {
                 </span>
                 <p className="font-bold text-ink">Missed USSD Confirmation</p>
               </div>
-              <button
-                onClick={() => setMissedDoseEnabled((v) => !v)}
-                aria-label="Toggle rule"
-                className={`relative h-6 w-11 rounded-full transition-colors ${missedDoseEnabled ? 'bg-navy' : 'bg-border'}`}
-              >
-                <span className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${missedDoseEnabled ? 'left-[22px]' : 'left-0.5'}`} />
-              </button>
+              <span className="rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success-text">Always Active</span>
             </div>
 
             <div className="mt-4 rounded-lg bg-bg p-4 text-sm text-ink">
@@ -148,12 +149,11 @@ export default function EscalationRulesConfig() {
             </div>
 
             <div className="mt-3 flex items-center justify-between text-xs text-body">
-              <span>Last modified by Ward Admin</span>
-              <button className="font-semibold text-navy-light">Edit Details</button>
+              <span>Runs automatically via <code className="rounded bg-row-alt px-1">check_missed_doses()</code>, every 15 minutes</span>
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-white p-5 shadow-sm opacity-70">
+          <div className={`rounded-lg border border-border bg-white p-5 shadow-sm ${rules?.consecutiveMissesEnabled ? '' : 'opacity-70'}`}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-row-alt text-body">
@@ -162,20 +162,19 @@ export default function EscalationRulesConfig() {
                 <p className="font-bold text-ink">Consecutive Misses</p>
               </div>
               <button
-                onClick={() => setConsecutiveMissesEnabled((v) => !v)}
+                onClick={toggleConsecutiveMisses}
                 aria-label="Toggle rule"
-                className={`relative h-6 w-11 rounded-full transition-colors ${consecutiveMissesEnabled ? 'bg-navy' : 'bg-border'}`}
+                className={`relative h-6 w-11 rounded-full transition-colors ${rules?.consecutiveMissesEnabled ? 'bg-navy' : 'bg-border'}`}
               >
-                <span className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${consecutiveMissesEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+                <span className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${rules?.consecutiveMissesEnabled ? 'left-[22px]' : 'left-0.5'}`} />
               </button>
             </div>
             <div className="mt-4 rounded-lg bg-bg p-4 text-sm text-ink">
-              <p><span className="font-bold">IF</span> patient misses 3 consecutive scheduled doses,</p>
-              <p className="mt-1"><span className="font-bold">THEN</span> Escalate to Facility Manager via Dashboard Priority Queue.</p>
+              <p><span className="font-bold">IF</span> patient misses {rules?.consecutiveMissesThreshold ?? 3} consecutive scheduled doses,</p>
+              <p className="mt-1"><span className="font-bold">THEN</span> Escalate immediately at "high" priority (rule-based override -- no AI call needed to know a pattern of misses is urgent).</p>
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-body">
-              <span>Last modified by System Admin</span>
-              <button className="font-semibold text-navy-light">Edit Details</button>
+              <span>{rules?.consecutiveMissesEnabled ? 'Runs automatically every 15 minutes' : 'Currently disabled'}</span>
             </div>
           </div>
         </div>
