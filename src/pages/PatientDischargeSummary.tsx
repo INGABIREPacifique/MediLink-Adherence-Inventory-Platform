@@ -111,7 +111,8 @@ export default function PatientDischargeSummary() {
             Medication Recap
           </h3>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="border-b border-border bg-bg text-left text-xs font-semibold uppercase tracking-wide text-body">
             <tr>
               <th className="px-5 py-3">Medication</th>
@@ -135,6 +136,7 @@ export default function PatientDischargeSummary() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="flex justify-end gap-3">

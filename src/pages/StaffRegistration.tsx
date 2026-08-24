@@ -110,7 +110,7 @@ export default function StaffRegistration() {
             <UserPlus size={18} />
             Patient Demographics
           </h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
               Full Name
               <input required value={draft.patientName} onChange={(e) => setDraft({ ...draft, patientName: e.target.value })}
@@ -168,7 +168,7 @@ export default function StaffRegistration() {
                 </div>
 
                 <p className="mb-2 mt-3 text-xs font-semibold text-body">Daily Dose Schedule</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {DOSE_SLOTS.map((slot) => {
                     const checked = med.scheduleTimes.includes(slot.time);
                     return (

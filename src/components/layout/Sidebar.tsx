@@ -16,6 +16,7 @@ import {
   Home,
   Users,
   ClipboardList,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
@@ -73,7 +74,18 @@ const brandByRole: Record<string, { title: string; subtitle: string }> = {
   chw: { title: 'MediLink CHW', subtitle: 'Community Health Worker' },
 };
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}
+
+// Was a permanently-visible fixed-width block with zero responsive
+// behavior -- on an actual phone screen (which is realistically how a CHW
+// uses this while out doing home visits between patients) a static 256px
+// sidebar would eat most of the viewport and leave content unusable. Now:
+// permanent visible sidebar at lg+ (desktop/tablet), slide-out drawer with
+// backdrop below that (phone).
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { signOut, profile } = useAuth();
   const role = profile?.role ?? 'nurse';
   const isChw = role === 'chw';
@@ -85,6 +97,7 @@ export function Sidebar() {
         key={to}
         to={to}
         end={end}
+        onClick={onMobileClose}
         className={({ isActive }) =>
           `flex items-center gap-3 rounded px-3 py-2.5 text-sm ${
             isActive ? 'bg-[rgba(128,249,139,0.35)] font-semibold text-navy' : 'text-body hover:bg-black/5'
@@ -98,19 +111,31 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col gap-4 border-r border-border bg-bg py-6 pl-4 pr-[17px]">
-      <div className="flex items-center gap-2.5 px-2 pb-6">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-navy text-white">
-          <Cross size={16} />
+    <>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onMobileClose} aria-hidden="true" />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col gap-4 border-r border-border bg-bg py-6 pl-4 pr-[17px] transition-transform duration-200 lg:static lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 px-2 pb-6">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-navy text-white">
+            <Cross size={16} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-bold leading-tight text-navy">{brand.title}</h1>
+            <p className="text-xs text-body">{brand.subtitle}</p>
+          </div>
+          <button onClick={onMobileClose} aria-label="Close menu" className="rounded p-1 text-body hover:bg-black/5 lg:hidden">
+            <X size={18} />
+          </button>
         </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold leading-tight text-navy">{brand.title}</h1>
-          <p className="text-xs text-body">{brand.subtitle}</p>
-        </div>
-      </div>
 
       <NavLink
         to={isChw ? '/chw/visit-log' : '/enrollment'}
+        onClick={onMobileClose}
         className="flex items-center justify-center gap-2 rounded-lg bg-navy py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-navy-light"
       >
         <Plus size={16} />
@@ -129,7 +154,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-border pt-4">
-        <NavLink to="/help" className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5">
+        <NavLink to="/help" onClick={onMobileClose} className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5">
           <HelpCircle size={15} />
           Help Center
         </NavLink>
@@ -141,6 +166,7 @@ export function Sidebar() {
           Log Out
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

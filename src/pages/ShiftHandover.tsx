@@ -61,7 +61,8 @@ export default function ShiftHandover() {
               {snapshot?.pendingEscalationsCount ?? escalations.length} Pending
             </span>
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="border-b border-border bg-bg text-left text-xs font-semibold uppercase tracking-wide text-body">
               <tr>
                 <th className="px-5 py-2">Patient</th>
@@ -98,6 +99,7 @@ export default function ShiftHandover() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="rounded-lg border border-border bg-white shadow-sm">

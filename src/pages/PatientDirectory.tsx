@@ -26,7 +26,8 @@ export default function PatientDirectory() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border bg-white shadow-sm">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="border-b border-border bg-bg text-left text-xs font-semibold uppercase tracking-wide text-body">
             <tr>
               <th className="px-6 py-3">Patient</th>
@@ -50,6 +51,7 @@ export default function PatientDirectory() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopNav } from './TopNav';
@@ -32,17 +32,25 @@ const roleLabels: Record<string, string> = {
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { profile } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isChwHome = location.pathname === '/' && profile?.role === 'chw';
   const subtext = isChwHome
     ? 'Your priority tasks and today\u2019s visit summary.'
     : routeSubtext[location.pathname] ?? 'Welcome back to MediLink Rwanda.';
 
+  // Close the mobile drawer automatically whenever the route changes --
+  // otherwise navigating on a phone would leave the drawer open over the
+  // new page.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg">
-      <Sidebar />
+      <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopNav />
-        <main className="flex-1 overflow-auto bg-bg p-10">
+        <TopNav onMenuClick={() => setMobileMenuOpen(true)} />
+        <main className="flex-1 overflow-auto bg-bg p-4 sm:p-6 lg:p-10">
           <div className="mb-8">
             <GreetingBanner
               roleLabel={profile ? roleLabels[profile.role] : 'WARD NURSE · KIGALI CENTRAL HOSPITAL'}

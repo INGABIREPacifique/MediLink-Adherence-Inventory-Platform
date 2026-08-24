@@ -46,7 +46,8 @@ export default function AIForecasting() {
         <div className="border-b border-border bg-bg px-6 py-4">
           <h3 className="text-xl font-semibold text-ink">Current Rule-Based Reorder Status</h3>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="border-b border-border bg-bg">
             <tr className="text-left text-xs font-semibold tracking-wide text-body">
               <th className="px-6 py-3">Medication</th>
@@ -75,6 +76,7 @@ export default function AIForecasting() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 text-xs text-body">

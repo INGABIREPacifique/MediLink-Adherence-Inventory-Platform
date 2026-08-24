@@ -79,11 +79,11 @@ export default function PatientHistoryPage() {
         {history.weekStatus.length === 0 ? (
           <p className="text-sm text-body">No prescriptions on file for this patient yet.</p>
         ) : (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {history.weekStatus.map((d) => (
-              <div key={d.day} className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-white p-3">
-                <span className="text-xs font-semibold text-body">{d.day}</span>
-                <span className={`flex size-9 items-center justify-center rounded-full ${dayIcon[d.status].bg}`}>
+              <div key={d.day} className="flex flex-col items-center gap-1 rounded-lg border border-border bg-white p-1.5 sm:gap-1.5 sm:p-3">
+                <span className="text-[10px] font-semibold text-body sm:text-xs">{d.day}</span>
+                <span className={`flex size-7 items-center justify-center rounded-full sm:size-9 ${dayIcon[d.status].bg}`}>
                   {dayIcon[d.status].icon}
                 </span>
               </div>
@@ -96,7 +96,8 @@ export default function PatientHistoryPage() {
         <div className="border-b border-border bg-bg px-6 py-4">
           <h3 className="text-lg font-bold text-ink">Detailed History</h3>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="border-b border-border bg-bg text-left text-xs font-semibold uppercase tracking-wide text-body">
             <tr>
               <th className="px-6 py-3">Date</th>
@@ -120,6 +121,7 @@ export default function PatientHistoryPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

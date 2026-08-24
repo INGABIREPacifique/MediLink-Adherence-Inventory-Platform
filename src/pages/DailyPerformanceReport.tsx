@@ -77,7 +77,7 @@ export default function DailyPerformanceReport() {
             <ClipboardCheck size={16} className="text-navy" />
             Today's Adherence Summary
           </h2>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-lg bg-row-alt p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-body">Total Scheduled</p>
               <p className="text-2xl font-bold text-ink">{counts.totalScheduled}</p>
