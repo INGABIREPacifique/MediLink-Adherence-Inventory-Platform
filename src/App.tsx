@@ -18,6 +18,8 @@ import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
 import AuditLog from './pages/AuditLog';
+import PilotFeedbackLog from './pages/PilotFeedbackLog';
+import SupervisorDashboard from './pages/SupervisorDashboard';
 
 // "/" renders a different screen depending on the logged-in user's role --
 // same desktop shell for everyone, role-based content, per direction:
@@ -54,6 +56,8 @@ export default function App() {
             <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
             <Route path="/help" element={<HelpGuide />} />
             <Route path="/audit-log" element={<AuditLog />} />
+            <Route path="/feedback" element={<PilotFeedbackLog />} />
+            <Route path="/supervisor" element={<SupervisorDashboard />} />
           </Routes>
         </AppShell>
       </ProtectedRoute>

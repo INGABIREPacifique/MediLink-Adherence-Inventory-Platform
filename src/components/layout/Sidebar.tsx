@@ -17,6 +17,8 @@ import {
   Users,
   ClipboardList,
   X,
+  ShieldCheck,
+  MessageSquareText,
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
@@ -45,6 +47,7 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
     section: 'Reports',
     items: [
       { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
+      { to: '/supervisor', label: 'Supervisor Dashboard', icon: ShieldCheck },
       { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
       { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
     ],
@@ -53,6 +56,7 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
     section: 'Tools & Admin',
     items: [
       { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
+      { to: '/feedback', label: 'Pilot Feedback', icon: MessageSquareText },
       { to: '/settings', label: 'System Settings', icon: Settings },
     ],
   },

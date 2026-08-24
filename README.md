@@ -66,6 +66,18 @@ wired to real Supabase tables — see "Data layer" below.
 
 ## Report generation
 
+## Pilot Feedback Log & Supervisor Dashboard
+
+Run `supabase/migrations/0012_pilot_feedback.sql`. Two more Figma screens
+that were genuinely pilot-relevant (not later-phase) and previously
+unbuilt:
+- **Pilot Feedback & Iteration Log** (`/feedback`) — real structured
+  feedback collection, explicitly named for the 3-month pilot period.
+- **Supervisor Dashboard** (`/supervisor`) — CHW performance roster and
+  facility-wide KPIs. The Figma design's Regional Adherence Heatmap is
+  intentionally not built — this pilot has no facility geolocation data,
+  and fabricating map coordinates would be worse than leaving it out.
+
 ## Real-time notifications
 
 Run `supabase/migrations/0011_enable_realtime.sql` -- required for the

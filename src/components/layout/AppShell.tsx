@@ -21,6 +21,8 @@ const routeSubtext: Record<string, string> = {
   '/chw/visit-log': 'Record and review home visits.',
   '/patients': 'Browse all enrolled patients and their adherence history.',
   '/help': 'What each part of the system does.',
+  '/feedback': 'Log workflow friction, bugs, or suggestions from the pilot.',
+  '/supervisor': 'CHW performance and workload across the facility.',
 };
 
 const roleLabels: Record<string, string> = {
