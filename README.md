@@ -66,6 +66,19 @@ wired to real Supabase tables — see "Data layer" below.
 
 ## Report generation
 
+## Real-time notifications
+
+Run `supabase/migrations/0011_enable_realtime.sql` -- required for the
+notification bell to actually receive anything (enables Postgres change
+streaming on the `escalations` table). Implements the proposal's §6
+"notification service": when a new escalation is created (by the
+auto-escalation engine, or manually), every connected staff session sees
+it live, no page refresh needed. Click the bell to see recent
+notifications; click one to jump straight to that patient.
+
+Honest limitation: read/unread state is per-session, not persisted to the
+database -- documented in `NotificationContext.tsx`.
+
 ## Security (role-based access)
 
 Run `supabase/migrations/0009_role_based_rls.sql` to tighten Row-Level
