@@ -19,6 +19,8 @@ const routeSubtext: Record<string, string> = {
   '/ussd-simulator': 'Simulating the patient-facing USSD confirmation flow.',
   '/chw/patients': 'Patients enrolled in the post-discharge adherence program.',
   '/chw/visit-log': 'Record and review home visits.',
+  '/chw/inventory': 'Supplies for home visits, drawn from facility stock.',
+  '/chw/training': 'Onboarding modules for using MediLink in the field.',
   '/patients': 'Browse all enrolled patients and their adherence history.',
   '/help': 'What each part of the system does.',
   '/feedback': 'Log workflow friction, bugs, or suggestions from the pilot.',

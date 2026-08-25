@@ -19,6 +19,7 @@ import {
   X,
   ShieldCheck,
   MessageSquareText,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
@@ -63,13 +64,16 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
 ];
 
 // Matches Figma's CHW Field App content (node 1:2014 Home, 1:2293 Patient
-// Registry, 1:1909 Visit Log) -- reskinned for this desktop shell instead
-// of the mobile bottom-tab layout Figma shows, per the person's direction.
+// Registry, 1:1909 Visit Log, 1:6740 Local Inventory, 1:12320 Training
+// Portal) -- reskinned for this desktop shell instead of the mobile
+// bottom-tab layout Figma shows, per the person's direction.
 const chwNav = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/chw/patients', label: 'My Patients', icon: Users },
   { to: '/chw/visit-log', label: 'Visit Log', icon: ClipboardList },
+  { to: '/chw/inventory', label: 'Local Inventory', icon: Package },
   { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
+  { to: '/chw/training', label: 'Training Portal', icon: GraduationCap },
 ];
 
 const brandByRole: Record<string, { title: string; subtitle: string }> = {

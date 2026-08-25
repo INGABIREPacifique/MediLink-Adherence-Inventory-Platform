@@ -14,6 +14,8 @@ import UssdSimulator from './pages/UssdSimulator';
 import ChwHome from './pages/chw/ChwHome';
 import ChwPatients from './pages/chw/ChwPatients';
 import ChwVisitLog from './pages/chw/ChwVisitLog';
+import ChwLocalInventory from './pages/chw/ChwLocalInventory';
+import ChwTraining from './pages/chw/ChwTraining';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -52,6 +54,8 @@ export default function App() {
             <Route path="/settings" element={<EscalationRulesConfig />} />
             <Route path="/chw/patients" element={<ChwPatients />} />
             <Route path="/chw/visit-log" element={<ChwVisitLog />} />
+            <Route path="/chw/inventory" element={<ChwLocalInventory />} />
+            <Route path="/chw/training" element={<ChwTraining />} />
             <Route path="/patients" element={<PatientDirectory />} />
             <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
             <Route path="/help" element={<HelpGuide />} />

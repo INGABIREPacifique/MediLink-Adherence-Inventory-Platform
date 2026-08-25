@@ -66,6 +66,22 @@ wired to real Supabase tables — see "Data layer" below.
 
 ## Report generation
 
+## CHW Local Inventory & Training Portal
+
+Run `supabase/migrations/0013_chw_inventory_and_training.sql`. Closes the
+last two flagged screens from the Figma inventory:
+- **Local Inventory** (`/chw/inventory`) — a CHW's view of the same
+  facility stock (this pilot has one shared inventory, not separate ward
+  vs. field kits), with a real "Log Usage" action. The Figma design also
+  shows a "Request Restock" button that silently adds stock -- that's
+  intentionally NOT built, since it would fake an approval workflow that
+  doesn't exist (that's the full-platform Replenishment Approval Flow,
+  Phase 3+ scope).
+- **Training Portal** (`/chw/training`) — real onboarding modules
+  describing how this actual system works, with real per-CHW progress
+  tracking and sequential unlocking, not the mockup's static "3/5
+  Modules" placeholder.
+
 ## Pilot Feedback Log & Supervisor Dashboard
 
 Run `supabase/migrations/0012_pilot_feedback.sql`. Two more Figma screens
