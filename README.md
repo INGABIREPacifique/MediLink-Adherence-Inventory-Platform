@@ -244,3 +244,28 @@ Colors are extracted directly from the Figma design and defined once in
 - `warning-text` (`#eeb400`) -- in-progress states
 - `border` (`#c2c6d3`) -- all hairline borders
 - `bg` (`#f9f9ff`) -- app background
+
+## Deploying to a real URL
+
+Right now this only exists as code and a local dev server — no nurse or
+CHW can actually reach it without someone running `npm run dev` on a
+laptop. That's fine for building, not for a real pilot. `vercel.json` is
+already in this repo (SPA rewrite rule, needed because React Router's
+client-side routes like `/patients/:id` will 404 on a static host without
+it).
+
+**Vercel (recommended — free, connects directly to GitHub, no CLI needed):**
+
+1. Go to [vercel.com](https://vercel.com), sign in with GitHub.
+2. **Add New → Project**, select `MediLink-Adherence-Inventory-Platform`.
+3. Vercel auto-detects Vite — leave the build settings as default (`npm run build`, output `dist`).
+4. Under **Environment Variables**, add:
+   - `VITE_SUPABASE_URL` = your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` = your Supabase anon key
+   (same values as your local `.env.local`)
+5. Click **Deploy**. You'll get a real `https://...vercel.app` URL within a minute or two.
+6. Every future `git push` to `main` auto-redeploys — no extra steps.
+
+One more thing to update once you have a real URL: in Supabase dashboard →
+**Authentication → URL Configuration**, add your Vercel URL to the allowed
+redirect URLs list, or login may be blocked from the deployed site.
