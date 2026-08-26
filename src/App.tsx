@@ -16,6 +16,12 @@ import ChwPatients from './pages/chw/ChwPatients';
 import ChwVisitLog from './pages/chw/ChwVisitLog';
 import ChwLocalInventory from './pages/chw/ChwLocalInventory';
 import ChwTraining from './pages/chw/ChwTraining';
+import { PatientPortalLayout } from './components/patient/PatientPortalLayout';
+import PatientDashboard from './pages/patient/PatientDashboard';
+import PatientMedications from './pages/patient/PatientMedications';
+import PatientAdherence from './pages/patient/PatientAdherence';
+import PatientReports from './pages/patient/PatientReports';
+import PatientSettings from './pages/patient/PatientSettings';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -39,32 +45,52 @@ function RoleAwareHome() {
 export default function App() {
   return (
     <BrowserRouter>
-      <ProtectedRoute>
-        <AppShell>
-          <Routes>
-            <Route path="/" element={<RoleAwareHome />} />
-            <Route path="/inventory" element={<WardInventory />} />
-            <Route path="/enrollment" element={<StaffRegistration />} />
-            <Route path="/handover" element={<ShiftHandover />} />
-            <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
-            <Route path="/discharge-summary/:patientId" element={<PatientDischargeSummary />} />
-            <Route path="/forecasting" element={<AIForecasting />} />
-            <Route path="/ussd-simulator" element={<UssdSimulator />} />
-            <Route path="/reports" element={<DailyPerformanceReport />} />
-            <Route path="/settings" element={<EscalationRulesConfig />} />
-            <Route path="/chw/patients" element={<ChwPatients />} />
-            <Route path="/chw/visit-log" element={<ChwVisitLog />} />
-            <Route path="/chw/inventory" element={<ChwLocalInventory />} />
-            <Route path="/chw/training" element={<ChwTraining />} />
-            <Route path="/patients" element={<PatientDirectory />} />
-            <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
-            <Route path="/help" element={<HelpGuide />} />
-            <Route path="/audit-log" element={<AuditLog />} />
-            <Route path="/feedback" element={<PilotFeedbackLog />} />
-            <Route path="/supervisor" element={<SupervisorDashboard />} />
-          </Routes>
-        </AppShell>
-      </ProtectedRoute>
+      <Routes>
+        {/* Patient Portal -- FRONTEND ONLY, deliberately NOT behind
+            ProtectedRoute (which gates staff Supabase auth). A real patient
+            login (phone + OTP, not email/password) is the backend phase
+            for this batch, not built yet -- see PatientPortalLayout.tsx. */}
+        <Route path="/patient" element={<PatientPortalLayout />}>
+          <Route index element={<PatientDashboard />} />
+          <Route path="medications" element={<PatientMedications />} />
+          <Route path="adherence" element={<PatientAdherence />} />
+          <Route path="reports" element={<PatientReports />} />
+          <Route path="settings" element={<PatientSettings />} />
+        </Route>
+
+        {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <Routes>
+                  <Route path="/" element={<RoleAwareHome />} />
+                  <Route path="/inventory" element={<WardInventory />} />
+                  <Route path="/enrollment" element={<StaffRegistration />} />
+                  <Route path="/handover" element={<ShiftHandover />} />
+                  <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
+                  <Route path="/discharge-summary/:patientId" element={<PatientDischargeSummary />} />
+                  <Route path="/forecasting" element={<AIForecasting />} />
+                  <Route path="/ussd-simulator" element={<UssdSimulator />} />
+                  <Route path="/reports" element={<DailyPerformanceReport />} />
+                  <Route path="/settings" element={<EscalationRulesConfig />} />
+                  <Route path="/chw/patients" element={<ChwPatients />} />
+                  <Route path="/chw/visit-log" element={<ChwVisitLog />} />
+                  <Route path="/chw/inventory" element={<ChwLocalInventory />} />
+                  <Route path="/chw/training" element={<ChwTraining />} />
+                  <Route path="/patients" element={<PatientDirectory />} />
+                  <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
+                  <Route path="/help" element={<HelpGuide />} />
+                  <Route path="/audit-log" element={<AuditLog />} />
+                  <Route path="/feedback" element={<PilotFeedbackLog />} />
+                  <Route path="/supervisor" element={<SupervisorDashboard />} />
+                </Routes>
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
