@@ -24,6 +24,8 @@ import PatientReports from './pages/patient/PatientReports';
 import PatientSettings from './pages/patient/PatientSettings';
 import { MinistryLayout } from './components/ministry/MinistryLayout';
 import MinistryDashboard from './pages/ministry/MinistryDashboard';
+import MinistryClinical from './pages/ministry/MinistryClinical';
+import MinistrySectorReports from './pages/ministry/MinistrySectorReports';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -65,6 +67,8 @@ export default function App() {
             a distinct auth tier, backend phase not started. */}
         <Route path="/ministry" element={<MinistryLayout />}>
           <Route index element={<MinistryDashboard />} />
+          <Route path="clinical" element={<MinistryClinical />} />
+          <Route path="reports" element={<MinistrySectorReports />} />
         </Route>
 
         {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}
