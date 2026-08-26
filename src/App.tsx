@@ -22,6 +22,8 @@ import PatientMedications from './pages/patient/PatientMedications';
 import PatientAdherence from './pages/patient/PatientAdherence';
 import PatientReports from './pages/patient/PatientReports';
 import PatientSettings from './pages/patient/PatientSettings';
+import { MinistryLayout } from './components/ministry/MinistryLayout';
+import MinistryDashboard from './pages/ministry/MinistryDashboard';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -56,6 +58,13 @@ export default function App() {
           <Route path="adherence" element={<PatientAdherence />} />
           <Route path="reports" element={<PatientReports />} />
           <Route path="settings" element={<PatientSettings />} />
+        </Route>
+
+        {/* Ministry/Health Authority tier -- FRONTEND ONLY, same reasoning
+            as Patient Portal: a real district/national official login is
+            a distinct auth tier, backend phase not started. */}
+        <Route path="/ministry" element={<MinistryLayout />}>
+          <Route index element={<MinistryDashboard />} />
         </Route>
 
         {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}
