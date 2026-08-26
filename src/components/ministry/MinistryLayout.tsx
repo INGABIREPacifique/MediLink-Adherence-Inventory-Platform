@@ -15,6 +15,8 @@ const navItems = [
   { to: '/ministry/inventory', label: 'Inventory', icon: Package },
   { to: '/ministry/clinical', label: 'Clinical', icon: Stethoscope },
   { to: '/ministry/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/ministry/national-export', label: 'National', icon: LayoutDashboard },
+  { to: '/ministry/report-approval', label: 'Approvals', icon: Settings },
 ];
 
 export function MinistryLayout() {
