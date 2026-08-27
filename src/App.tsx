@@ -28,6 +28,7 @@ import MinistryClinical from './pages/ministry/MinistryClinical';
 import MinistrySectorReports from './pages/ministry/MinistrySectorReports';
 import MinistryNationalExport from './pages/ministry/MinistryNationalExport';
 import MinistryReportApproval from './pages/ministry/MinistryReportApproval';
+import MinistryDistrictFacility from './pages/ministry/MinistryDistrictFacility';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="reports" element={<MinistrySectorReports />} />
           <Route path="national-export" element={<MinistryNationalExport />} />
           <Route path="report-approval" element={<MinistryReportApproval />} />
+          <Route path="district" element={<MinistryDistrictFacility />} />
         </Route>
 
         {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}
