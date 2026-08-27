@@ -107,6 +107,20 @@ notifications; click one to jump straight to that patient.
 Honest limitation: read/unread state is per-session, not persisted to the
 database -- documented in `NotificationContext.tsx`.
 
+## Logic hardening
+
+Run `supabase/migrations/0014_strengthen_logic.sql`. Three correctness
+fixes found on review, not new features:
+- Stock logging was a client-side read-then-write (race condition if two
+  people logged usage on the same item at the same moment) — now a single
+  atomic Postgres function.
+- Added real database-level unique constraints preventing duplicate
+  escalations for the same missed dose/appointment, as defense in depth
+  beyond the engine functions' existing "not exists" checks.
+- Fixed a missing RLS UPDATE policy on `chw_training_progress` that would
+  have surfaced as a confusing error the moment the upsert path was
+  actually exercised.
+
 ## Security (role-based access)
 
 Run `supabase/migrations/0009_role_based_rls.sql` to tighten Row-Level

@@ -41,14 +41,23 @@ export async function enrollPatient(draft: EnrollmentDraft, assignedChwId?: stri
         preferred_channel: draft.preferredChannel,
         language: draft.language,
       })
-      .select('id, schedule_times, start_date')
+      .select('id, schedule_times, start_date, end_date')
       .single();
     if (presError || !prescription) throw presError ?? new Error('Failed to create prescription');
 
-    // Generate 30 days of dose_reminders forward from the start date.
+    // Generate up to 30 days of dose_reminders forward from the start
+    // date -- but never past end_date if one is set. Previously this
+    // always generated the full 30 days regardless, which would create
+    // reminders for doses after the prescribed course was supposed to
+    // end. The enrollment form doesn't currently collect an end date, so
+    // this was latent (end_date always null in practice) rather than an
+    // active bug -- fixed now so it's correct if/when that field is added.
     const doseRows: { prescription_id: string; scheduled_for: string; channel: string }[] = [];
     const startDate = new Date(prescription.start_date);
-    for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+    const maxDayOffset = prescription.end_date
+      ? Math.min(30, Math.floor((new Date(prescription.end_date).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+      : 30;
+    for (let dayOffset = 0; dayOffset < maxDayOffset; dayOffset++) {
       for (const time of prescription.schedule_times as string[]) {
         const [hours, minutes] = time.split(':').map(Number);
         const scheduledFor = new Date(startDate);

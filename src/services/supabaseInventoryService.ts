@@ -31,15 +31,9 @@ function mapRow(row: InventoryRow): InventoryItem {
   };
 }
 
-// Rule-based status recompute -- mirrors mockInventoryService so behavior is
-// identical either way. Written client-side here; move to a Postgres
-// trigger/function if multiple clients ever write concurrently.
-function computeStatus(currentStock: number, threshold: number): StockStatus {
-  if (currentStock <= threshold * 0.5) return 'critical';
-  if (currentStock <= threshold) return 'warning';
-  if (currentStock <= threshold * 1.5) return 'adequate';
-  return 'healthy';
-}
+// Status thresholds are now computed inside the atomic log_stock_usage()
+// Postgres function (0014_strengthen_logic.sql) -- kept only server-side
+// so the increment and status recompute happen in one transaction.
 
 export const supabaseInventoryService: InventoryService = {
   async getItems() {
@@ -65,26 +59,14 @@ export const supabaseInventoryService: InventoryService = {
   },
 
   async logUsage(id: string, delta: number) {
-    const { data: current, error: fetchError } = await supabase
-      .from('inventory_items')
-      .select('current_stock, reorder_threshold')
-      .eq('id', id)
-      .single();
-    if (fetchError) throw fetchError;
-
-    const newStock = Math.max(0, current.current_stock + delta);
-    const newStatus = computeStatus(newStock, current.reorder_threshold);
-
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .update({ current_stock: newStock, status: newStatus, last_logged_at: new Date().toISOString() })
-      .eq('id', id)
-      .select('*')
-      .single();
+    // Was a client-side read-then-write (fetch current_stock, compute new
+    // value, write it back) -- two people logging stock at the same
+    // moment could race and one update would silently overwrite the
+    // other. Now a single atomic Postgres function
+    // (0014_strengthen_logic.sql) does the increment, status recompute,
+    // and stock_movements insert all in one transaction -- no race window.
+    const { data, error } = await supabase.rpc('log_stock_usage', { p_item_id: id, p_delta: delta });
     if (error) throw error;
-
-    await supabase.from('stock_movements').insert({ item_id: id, delta });
-
     return mapRow(data as InventoryRow);
   },
 };
