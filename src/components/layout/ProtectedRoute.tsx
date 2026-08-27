@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useAuth } from '../../lib/AuthContext';
-import Login from '../../pages/Login';
+import Landing from '../../pages/Landing';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!session) {
-    return <Login />;
+    return <Landing />;
   }
 
   return <>{children}</>;

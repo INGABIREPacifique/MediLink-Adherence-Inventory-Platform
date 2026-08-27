@@ -35,6 +35,7 @@ import HelpGuide from './pages/HelpGuide';
 import AuditLog from './pages/AuditLog';
 import PilotFeedbackLog from './pages/PilotFeedbackLog';
 import SupervisorDashboard from './pages/SupervisorDashboard';
+import StaffEntry from './pages/StaffEntry';
 
 // "/" renders a different screen depending on the logged-in user's role --
 // same desktop shell for everyone, role-based content, per direction:
@@ -53,6 +54,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Dedicated staff sign-in, reached from the Landing page's
+            "Staff & CHW Portal" choice. Redirects into the real app at
+            "/" if already logged in. */}
+        <Route path="/staff" element={<StaffEntry />} />
+
         {/* Patient Portal -- FRONTEND ONLY, deliberately NOT behind
             ProtectedRoute (which gates staff Supabase auth). A real patient
             login (phone + OTP, not email/password) is the backend phase
