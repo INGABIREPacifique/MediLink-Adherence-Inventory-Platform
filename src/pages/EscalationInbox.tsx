@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, MessageSquare, CheckCircle2, TrendingUp, Sparkles, Loader2, Eye } from 'lucide-react';
+import { Phone, MessageSquare, TrendingUp, Sparkles, Loader2, Eye } from 'lucide-react';
 import { alertsService } from '../services';
 import { supabase } from '../lib/supabaseClient';
 import { formatElapsed, formatClockTime } from '../services/format';
@@ -46,14 +46,22 @@ export default function EscalationInbox() {
 
   const activeAlertsCount = useMemo(() => alerts.filter((a) => a.status !== 'resolved').length, [alerts]);
 
-  async function handleResolve(id: string) {
-    await alertsService.resolveAlert(id, 'Reached by phone, confirmed dose taken.');
-    refresh();
-  }
-
   async function handleLogFollowUp(entry: Omit<FollowUpLogEntry, 'id' | 'alertId' | 'loggedAt'>) {
     if (!logModalAlert) return;
     await alertsService.logFollowUp(logModalAlert.id, entry);
+    // A confirmed dose is the one outcome that genuinely resolves the
+    // case -- resolve it now, using the real note just entered rather
+    // than a fabricated one. Previously there was a separate one-click
+    // "Mark Resolved" checkmark that wrote the exact same hardcoded note
+    // ("Reached by phone, confirmed dose taken.") every single time,
+    // regardless of what actually happened -- removed in favor of this,
+    // since a resolution record should reflect what was actually logged.
+    if (entry.outcome === 'confirmed_taken') {
+      await alertsService.resolveAlert(
+        logModalAlert.id,
+        entry.notes || `Confirmed via ${entry.method.replace('_', ' ')} by ${entry.loggedBy}.`
+      );
+    }
     refresh();
   }
 
@@ -246,13 +254,6 @@ export default function EscalationInbox() {
                             }`}
                           >
                             <MessageSquare size={15} />
-                          </button>
-                          <button
-                            onClick={() => handleResolve(alert.id)}
-                            aria-label="Mark resolved"
-                            className="rounded p-1.5 text-success hover:bg-black/5"
-                          >
-                            <CheckCircle2 size={16.5} />
                           </button>
                         </div>
                       )}
