@@ -29,6 +29,11 @@ import MinistrySectorReports from './pages/ministry/MinistrySectorReports';
 import MinistryNationalExport from './pages/ministry/MinistryNationalExport';
 import MinistryReportApproval from './pages/ministry/MinistryReportApproval';
 import MinistryDistrictFacility from './pages/ministry/MinistryDistrictFacility';
+import MinistryReportTemplates from './pages/ministry/MinistryReportTemplates';
+import MinistrySectorDetail from './pages/ministry/MinistrySectorDetail';
+import MinistryAdherenceMap from './pages/ministry/MinistryAdherenceMap';
+import MinistrySupplyChainCorrelation from './pages/ministry/MinistrySupplyChainCorrelation';
+import MinistryPerformanceExport from './pages/ministry/MinistryPerformanceExport';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -81,6 +86,11 @@ export default function App() {
           <Route path="national-export" element={<MinistryNationalExport />} />
           <Route path="report-approval" element={<MinistryReportApproval />} />
           <Route path="district" element={<MinistryDistrictFacility />} />
+          <Route path="report-templates" element={<MinistryReportTemplates />} />
+          <Route path="sector-detail" element={<MinistrySectorDetail />} />
+          <Route path="adherence-map" element={<MinistryAdherenceMap />} />
+          <Route path="supply-chain" element={<MinistrySupplyChainCorrelation />} />
+          <Route path="performance-export" element={<MinistryPerformanceExport />} />
         </Route>
 
         {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}
