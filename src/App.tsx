@@ -34,6 +34,12 @@ import MinistrySectorDetail from './pages/ministry/MinistrySectorDetail';
 import MinistryAdherenceMap from './pages/ministry/MinistryAdherenceMap';
 import MinistrySupplyChainCorrelation from './pages/ministry/MinistrySupplyChainCorrelation';
 import MinistryPerformanceExport from './pages/ministry/MinistryPerformanceExport';
+import { PublicLayout } from './components/public/PublicLayout';
+import PublicHome from './pages/public/PublicHome';
+import DataAccessRequest from './pages/public/DataAccessRequest';
+import ResearchDataPortal from './pages/public/ResearchDataPortal';
+import ResearcherDashboard from './pages/public/ResearcherDashboard';
+import RequestSubmitted from './pages/public/RequestSubmitted';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -91,6 +97,18 @@ export default function App() {
           <Route path="adherence-map" element={<MinistryAdherenceMap />} />
           <Route path="supply-chain" element={<MinistrySupplyChainCorrelation />} />
           <Route path="performance-export" element={<MinistryPerformanceExport />} />
+        </Route>
+
+        {/* Public/Research Portal -- FRONTEND ONLY, fifth distinct shell
+            (general public + researchers). Submission flows navigate to
+            a confirmation screen but don't persist anywhere real yet --
+            backend phase, a real Ministry-side approval workflow. */}
+        <Route path="/public" element={<PublicLayout />}>
+          <Route index element={<PublicHome />} />
+          <Route path="data-portal" element={<ResearchDataPortal />} />
+          <Route path="request-data" element={<DataAccessRequest />} />
+          <Route path="requests" element={<ResearcherDashboard />} />
+          <Route path="request-submitted" element={<RequestSubmitted />} />
         </Route>
 
         {/* Staff/CHW app -- everything below stays behind real Supabase auth. */}

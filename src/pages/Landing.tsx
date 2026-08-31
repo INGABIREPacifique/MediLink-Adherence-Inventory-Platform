@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Radio, Stethoscope, ShieldCheck, User, ArrowRight } from 'lucide-react';
+import { Radio, Stethoscope, ShieldCheck, User, ArrowRight, Globe } from 'lucide-react';
 
 // Fixes a real gap: Patient Portal and Ministry tier existed only as
 // hidden URLs (/patient, /ministry) nobody could discover -- no login
@@ -21,7 +21,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <div className="grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link to="/staff" className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-navy hover:shadow-md">
           <span className="flex size-10 items-center justify-center rounded-lg bg-navy text-white">
             <Stethoscope size={18} />
@@ -56,6 +56,20 @@ export default function Landing() {
           <div>
             <p className="font-bold text-ink">Patient Portal</p>
             <p className="mt-1 text-sm text-body">For patients who prefer a smartphone interface over USSD.</p>
+          </div>
+          <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-warning-text">
+            <span className="rounded-full bg-warning-bg px-2 py-0.5 text-xs">Preview</span>
+            No real login yet
+          </span>
+        </Link>
+
+        <Link to="/public" className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-navy hover:shadow-md">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-row-alt text-body">
+            <Globe size={18} />
+          </span>
+          <div>
+            <p className="font-bold text-ink">Public &amp; Research Portal</p>
+            <p className="mt-1 text-sm text-body">Open health data and researcher dataset access requests.</p>
           </div>
           <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-warning-text">
             <span className="rounded-full bg-warning-bg px-2 py-0.5 text-xs">Preview</span>
