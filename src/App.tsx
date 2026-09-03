@@ -40,6 +40,10 @@ import DataAccessRequest from './pages/public/DataAccessRequest';
 import ResearchDataPortal from './pages/public/ResearchDataPortal';
 import ResearcherDashboard from './pages/public/ResearcherDashboard';
 import RequestSubmitted from './pages/public/RequestSubmitted';
+import ReplenishmentApproval from './pages/ReplenishmentApproval';
+import ColdChainMonitor from './pages/ColdChainMonitor';
+import OrderTracking from './pages/OrderTracking';
+import ThermalAuditLog from './pages/ThermalAuditLog';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -138,6 +142,10 @@ export default function App() {
                   <Route path="/audit-log" element={<AuditLog />} />
                   <Route path="/feedback" element={<PilotFeedbackLog />} />
                   <Route path="/supervisor" element={<SupervisorDashboard />} />
+                  <Route path="/replenishment" element={<ReplenishmentApproval />} />
+                  <Route path="/cold-chain" element={<ColdChainMonitor />} />
+                  <Route path="/order-tracking" element={<OrderTracking />} />
+                  <Route path="/thermal-audit" element={<ThermalAuditLog />} />
                 </Routes>
               </AppShell>
             </ProtectedRoute>

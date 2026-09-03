@@ -20,6 +20,8 @@ import {
   ShieldCheck,
   MessageSquareText,
   GraduationCap,
+  Truck,
+  Thermometer,
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
@@ -49,6 +51,10 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
     items: [
       { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
       { to: '/supervisor', label: 'Supervisor Dashboard', icon: ShieldCheck },
+      { to: '/replenishment', label: 'Replenishment Approval', icon: Package },
+      { to: '/order-tracking', label: 'Order Tracking', icon: Truck },
+      { to: '/cold-chain', label: 'Cold Chain Monitor', icon: Thermometer },
+      { to: '/thermal-audit', label: 'Thermal Audit Log', icon: Thermometer },
       { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
       { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
     ],
