@@ -4,6 +4,20 @@ import {
   getPendingDoses, confirmDose, getPendingAppointments, confirmAppointment,
   type PendingDose, type PendingAppointment,
 } from '../services/supabaseUssdService';
+import { timeOfDaySlotFor, TIME_OF_DAY_LABELS } from '../types';
+
+// Composes a message that names the time-of-day slot, dosage, and (when
+// available) administration instructions -- instead of a bare timestamp --
+// so a patient on several medications gets a distinct, specific reminder
+// per dose rather than one generic blast. Falls back gracefully when
+// instructions aren't set yet (real column pending, see PendingDose).
+function reminderMessage(dose: PendingDose): string {
+  const time = new Date(dose.scheduledFor);
+  const slotLabel = TIME_OF_DAY_LABELS[timeOfDaySlotFor(`${time.getHours()}:${time.getMinutes()}`)];
+  const dosagePart = dose.dosage ? ` (${dose.dosage})` : '';
+  const base = `Your ${slotLabel.toLowerCase()} dose of ${dose.medication}${dosagePart} was scheduled for ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
+  return dose.instructions ? `${base} ${dose.instructions}` : base;
+}
 
 // Matches Figma node 1:1146 "Appointment Screen" / node 1:882 "USSD
 // Interaction Flow" -- literal feature-phone USSD screen mockups (dark
@@ -69,7 +83,7 @@ export default function UssdSimulator() {
                 <p className="font-bold">MediLink: Reminder</p>
                 {doses.length > 0 ? (
                   <>
-                    <p>Your {doses[0].medication} dose was scheduled for {new Date(doses[0].scheduledFor).toLocaleTimeString()}.</p>
+                    <p>{reminderMessage(doses[0])}</p>
                     <p className="mt-2">1. Emeza (Confirm)</p>
                     <button onClick={() => setScreen({ kind: 'dose', dose: doses[0] })} className="mt-3 w-full rounded bg-white px-2 py-1 text-left">
                       1 &gt; Continue
@@ -90,7 +104,8 @@ export default function UssdSimulator() {
             ) : screen.kind === 'dose' ? (
               <>
                 <p className="font-bold">Confirm dose?</p>
-                <p>{screen.dose.medication} — {screen.dose.patientName}</p>
+                <p>{screen.dose.medication}{screen.dose.dosage ? ` (${screen.dose.dosage})` : ''} — {screen.dose.patientName}</p>
+                {screen.dose.instructions && <p className="mt-1 text-[10px] opacity-80">{screen.dose.instructions}</p>}
                 <button onClick={() => handleConfirmDose(screen.dose)} className="mt-3 w-full rounded bg-white px-2 py-1 text-left">
                   1 &gt; Emeza (Confirm)
                 </button>
