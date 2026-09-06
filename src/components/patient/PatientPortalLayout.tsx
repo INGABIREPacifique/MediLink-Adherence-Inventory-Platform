@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Pill, TrendingUp, FileText, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, Pill, TrendingUp, FileText, Settings, HelpCircle, LogOut, ClipboardList } from 'lucide-react';
 
 // Matches Figma's "Patient Portal" identity (seen on the Discharge Summary
 // and Patient Adherence History screens: nav = Dashboard/Medications/
@@ -15,6 +15,7 @@ import { LayoutDashboard, Pill, TrendingUp, FileText, Settings, HelpCircle, LogO
 const navItems = [
   { to: '/patient', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/patient/medications', label: 'Medications', icon: Pill },
+  { to: '/patient/medical-records', label: 'Medical Records', icon: ClipboardList },
   { to: '/patient/adherence', label: 'Adherence', icon: TrendingUp },
   { to: '/patient/reports', label: 'Reports', icon: FileText },
   { to: '/patient/settings', label: 'Settings', icon: Settings },

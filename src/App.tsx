@@ -9,6 +9,7 @@ import EscalationRulesConfig from './pages/EscalationRulesConfig';
 import ShiftHandover from './pages/ShiftHandover';
 import DailyPerformanceReport from './pages/DailyPerformanceReport';
 import PatientDischargeSummary from './pages/PatientDischargeSummary';
+import PatientMedicalRecord from './pages/PatientMedicalRecord';
 import AIForecasting from './pages/AIForecasting';
 import UssdSimulator from './pages/UssdSimulator';
 import ChwHome from './pages/chw/ChwHome';
@@ -22,6 +23,7 @@ import PatientMedications from './pages/patient/PatientMedications';
 import PatientAdherence from './pages/patient/PatientAdherence';
 import PatientReports from './pages/patient/PatientReports';
 import PatientSettings from './pages/patient/PatientSettings';
+import PatientMedicalRecords from './pages/patient/PatientMedicalRecords';
 import { MinistryLayout } from './components/ministry/MinistryLayout';
 import MinistryDashboard from './pages/ministry/MinistryDashboard';
 import MinistryClinical from './pages/ministry/MinistryClinical';
@@ -81,6 +83,7 @@ export default function App() {
         <Route path="/patient" element={<PatientPortalLayout />}>
           <Route index element={<PatientDashboard />} />
           <Route path="medications" element={<PatientMedications />} />
+          <Route path="medical-records" element={<PatientMedicalRecords />} />
           <Route path="adherence" element={<PatientAdherence />} />
           <Route path="reports" element={<PatientReports />} />
           <Route path="settings" element={<PatientSettings />} />
@@ -128,6 +131,7 @@ export default function App() {
                   <Route path="/handover" element={<ShiftHandover />} />
                   <Route path="/discharge-summary" element={<PatientDischargeSummary />} />
                   <Route path="/discharge-summary/:patientId" element={<PatientDischargeSummary />} />
+                  <Route path="/medical-record/:patientId" element={<PatientMedicalRecord />} />
                   <Route path="/forecasting" element={<AIForecasting />} />
                   <Route path="/ussd-simulator" element={<UssdSimulator />} />
                   <Route path="/reports" element={<DailyPerformanceReport />} />

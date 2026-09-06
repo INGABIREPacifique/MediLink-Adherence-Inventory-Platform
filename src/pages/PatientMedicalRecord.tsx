@@ -1,0 +1,186 @@
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, ShieldAlert, Stethoscope, Pill, Plus, Trash2, Download } from 'lucide-react';
+import { getDischargeSummary, type DischargeSummaryData } from '../services/supabaseDischargeService';
+import { getPatientHistory } from '../services/supabasePatientHistoryService';
+
+// A single aggregated "Medical Record History" view for a nurse -- pulls
+// together the pieces that already exist as real Supabase data
+// (prescriptions/medications via getDischargeSummary, adherence context via
+// getPatientHistory) plus two sections the schema doesn't capture yet:
+// Allergies and Conditions/Diagnoses.
+//
+// Frontend-first, per the project's build order: allergies/conditions are
+// edited and held in local component state here, NOT yet written to
+// Supabase (there's no `known_allergies` column or `conditions` table
+// yet -- that's the backend follow-up once this frontend shape is
+// confirmed). This mirrors the same honest-placeholder pattern used
+// elsewhere in the project (e.g. AI Forecasting) rather than silently
+// pretending it persists.
+//
+// This is also the single source that the Patient Portal's read-only
+// Medical Records page (src/pages/patient/PatientMedicalRecords.tsx) is
+// designed to mirror once allergies/conditions are wired to a real table.
+
+interface ConditionEntry {
+  id: string;
+  name: string;
+  diagnosedOn?: string;
+}
+
+export default function PatientMedicalRecord() {
+  const { patientId } = useParams<{ patientId: string }>();
+  const [summary, setSummary] = useState<DischargeSummaryData | null>(null);
+  const [patientName, setPatientName] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [allergyInput, setAllergyInput] = useState('');
+  const [conditions, setConditions] = useState<ConditionEntry[]>([]);
+  const [conditionInput, setConditionInput] = useState('');
+
+  useEffect(() => {
+    if (!patientId) return;
+    Promise.all([getDischargeSummary(patientId), getPatientHistory(patientId)])
+      .then(([dischargeSummary, history]) => {
+        setSummary(dischargeSummary);
+        setPatientName(history.patient.name);
+        setPatientPhone(history.patient.phone);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [patientId]);
+
+  function addAllergy() {
+    const value = allergyInput.trim();
+    if (!value || allergies.some((a) => a.toLowerCase() === value.toLowerCase())) {
+      setAllergyInput('');
+      return;
+    }
+    setAllergies((a) => [...a, value]);
+    setAllergyInput('');
+  }
+
+  function addCondition() {
+    const value = conditionInput.trim();
+    if (!value) return;
+    setConditions((c) => [...c, { id: crypto.randomUUID(), name: value, diagnosedOn: new Date().toISOString().slice(0, 10) }]);
+    setConditionInput('');
+  }
+
+  if (loading) return <div className="text-body">Loading medical record…</div>;
+  if (!summary) return <div className="text-body">No record found for this patient.</div>;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Link to={patientId ? `/patients/${patientId}` : '/patients'} className="flex w-fit items-center gap-2 text-sm font-semibold text-navy-light">
+        <ArrowLeft size={15} />
+        Back to Patient History
+      </Link>
+
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-ink">{patientName}'s Medical Record</h1>
+          <p className="text-body">{patientPhone}</p>
+        </div>
+        <button
+          type="button"
+          disabled
+          title="Full patient-portable export (PDF/QR) is a backend follow-up, once allergies and conditions are persisted"
+          className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-body opacity-50"
+        >
+          <Download size={15} />
+          Export Full Record
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
+        <p className="flex items-center gap-2 text-lg font-bold text-navy">
+          <ShieldAlert size={18} />
+          Known Allergies
+        </p>
+        <p className="mt-1 text-xs text-body">Visible read-only to the patient in their Patient Portal. Checked against new prescriptions at enrollment.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {allergies.length === 0 && <span className="text-sm text-body">None recorded.</span>}
+          {allergies.map((a) => (
+            <span key={a} className="flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger-bg/40 px-3 py-1 text-xs font-semibold text-danger-text">
+              {a}
+              <button type="button" onClick={() => setAllergies((list) => list.filter((x) => x !== a))} aria-label={`Remove ${a}`} className="text-danger-text hover:opacity-70">
+                <Trash2 size={11} />
+              </button>
+            </span>
+          ))}
+          <input
+            value={allergyInput}
+            onChange={(e) => setAllergyInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addAllergy(); } }}
+            placeholder="Add allergy — press Enter"
+            className="min-w-[200px] flex-1 rounded border border-border bg-bg px-3 py-2 text-sm font-normal text-ink"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
+        <p className="flex items-center gap-2 text-lg font-bold text-navy">
+          <Stethoscope size={18} />
+          Conditions &amp; Diagnoses
+        </p>
+        <p className="mt-1 text-xs text-body">Frontend-only for now — no `conditions` table exists yet; wire to Supabase once this shape is confirmed.</p>
+        <div className="mt-3 flex flex-col gap-2">
+          {conditions.length === 0 && <span className="text-sm text-body">None recorded.</span>}
+          {conditions.map((c) => (
+            <div key={c.id} className="flex items-center justify-between rounded border border-border bg-bg px-3 py-2">
+              <span className="text-sm font-semibold text-ink">{c.name}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-body">Since {c.diagnosedOn}</span>
+                <button type="button" onClick={() => setConditions((list) => list.filter((x) => x.id !== c.id))} aria-label={`Remove ${c.name}`} className="text-danger hover:opacity-70">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="mt-1 flex gap-2">
+            <input
+              value={conditionInput}
+              onChange={(e) => setConditionInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCondition(); } }}
+              placeholder="e.g. Type 2 Diabetes"
+              className="flex-1 rounded border border-border bg-bg px-3 py-2 text-sm font-normal text-ink"
+            />
+            <button type="button" onClick={addCondition} className="flex items-center gap-1.5 rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white">
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
+        <p className="flex items-center gap-2 text-lg font-bold text-navy">
+          <Pill size={18} />
+          Medication History
+        </p>
+        <p className="mt-1 text-xs text-body">Real data from this patient's prescriptions and dose confirmations.</p>
+        <div className="mt-3 flex flex-col gap-2">
+          {summary.medications.map((m) => (
+            <div key={m.name} className="flex items-center justify-between rounded border border-border bg-bg px-3 py-2">
+              <div>
+                <p className="text-sm font-semibold text-ink">{m.name}</p>
+                <p className="text-xs text-body">{m.dosage} — {m.frequency}</p>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${m.completed ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'}`}>
+                {m.completed ? 'Course completed' : 'In progress'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 text-sm font-semibold text-navy-light">
+        <Link to={`/patients/${patientId}`} className="rounded-lg border border-border bg-white px-4 py-2.5 shadow-sm">Adherence History</Link>
+        <Link to={`/discharge-summary/${patientId}`} className="rounded-lg border border-border bg-white px-4 py-2.5 shadow-sm">Discharge Summary</Link>
+      </div>
+    </div>
+  );
+}
