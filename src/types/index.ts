@@ -4,6 +4,7 @@ export interface Patient {
   id: string;
   name: string;
   phone: string;
+  allergies?: string[]; // e.g. ["Penicillin", "Sulfa drugs"] -- captured at enrollment/discharge, read-only in Patient Portal
 }
 
 export interface EscalationAlert {
@@ -64,6 +65,29 @@ export interface InventorySummary {
 
 // ---------- Staff Registration (patient enrollment at discharge) ----------
 
+export type TimeOfDaySlot = 'morning' | 'midday' | 'afternoon' | 'evening' | 'night';
+
+// Maps each raw HH:MM schedule time to a patient-facing time-of-day label
+// and slot key, so reminder messages can say "your morning dose" instead of
+// a bare timestamp. Falls back sensibly for times outside the four standard
+// enrollment slots (e.g. a custom time added later).
+export function timeOfDaySlotFor(time: string): TimeOfDaySlot {
+  const hour = Number(time.split(':')[0]);
+  if (hour < 11) return 'morning';
+  if (hour < 14) return 'midday';
+  if (hour < 18) return 'afternoon';
+  if (hour < 21) return 'evening';
+  return 'night';
+}
+
+export const TIME_OF_DAY_LABELS: Record<TimeOfDaySlot, string> = {
+  morning: 'Morning',
+  midday: 'Midday',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+  night: 'Night',
+};
+
 export interface PrescriptionSchedule {
   medication: string;
   dosage: string;
@@ -71,6 +95,7 @@ export interface PrescriptionSchedule {
   scheduleTimes: string[]; // e.g. ["08:00", "20:00"]
   startDate: string;
   endDate?: string;
+  instructions?: string; // e.g. "Take on an empty stomach, at least 1 hour before food."
 }
 
 export interface EnrollmentDraft {
@@ -80,6 +105,7 @@ export interface EnrollmentDraft {
   language: 'rw' | 'en' | 'fr';
   medications: PrescriptionSchedule[]; // most discharged patients take more than one -- each tracked and confirmed separately
   nextFollowUpDate: string;
+  allergies: string[]; // e.g. ["Penicillin"] -- checked against medications below before the form can be submitted
 }
 
 // ---------- Escalation Rules Configuration ----------

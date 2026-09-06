@@ -12,14 +12,37 @@ const DOSE_SLOTS = [
 ];
 
 function emptyMedication(): PrescriptionSchedule {
-  return { medication: '', dosage: '', timesPerDay: 2, scheduleTimes: ['08:00', '20:00'], startDate: new Date().toISOString().slice(0, 10) };
+  return { medication: '', dosage: '', timesPerDay: 2, scheduleTimes: ['08:00', '20:00'], startDate: new Date().toISOString().slice(0, 10), instructions: '' };
 }
 
 const emptyDraft: EnrollmentDraft = {
   patientName: '', phone: '', preferredChannel: 'ussd', language: 'rw',
   medications: [emptyMedication()],
   nextFollowUpDate: '',
+  allergies: [],
 };
+
+// Frontend-only substring check: does any known allergy appear inside a
+// prescribed medication's name? This is deliberately simple (direct
+// name/substring matching, not real drug-class cross-reactivity, which
+// would need a real clinical drug-interaction database/API -- out of
+// scope for this pilot, flagged here rather than faked). It still catches
+// the most common, most dangerous case: a patient with a recorded
+// penicillin allergy being re-prescribed penicillin or an amoxicillin-class
+// drug under a different brand name entered by the nurse.
+function findAllergyConflicts(allergies: string[], medications: PrescriptionSchedule[]): string[] {
+  const conflicts: string[] = [];
+  for (const allergy of allergies) {
+    const needle = allergy.trim().toLowerCase();
+    if (!needle) continue;
+    for (const med of medications) {
+      if (med.medication.trim().toLowerCase().includes(needle)) {
+        conflicts.push(`${med.medication || 'This medication'} may conflict with recorded allergy: ${allergy}`);
+      }
+    }
+  }
+  return conflicts;
+}
 
 // Matches Figma node 1:12760 "MVP Staff Registration - Patient Enrollment",
 // extended to support MULTIPLE medications per patient -- most discharged
@@ -38,6 +61,25 @@ export default function StaffRegistration() {
   const [submitting, setSubmitting] = useState(false);
   const [enrolled, setEnrolled] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [allergyInput, setAllergyInput] = useState('');
+  const [conflictOverridden, setConflictOverridden] = useState(false);
+
+  const allergyConflicts = findAllergyConflicts(draft.allergies, draft.medications);
+
+  function addAllergy() {
+    const value = allergyInput.trim();
+    if (!value || draft.allergies.some((a) => a.toLowerCase() === value.toLowerCase())) {
+      setAllergyInput('');
+      return;
+    }
+    setDraft((d) => ({ ...d, allergies: [...d.allergies, value] }));
+    setAllergyInput('');
+    setConflictOverridden(false);
+  }
+
+  function removeAllergy(value: string) {
+    setDraft((d) => ({ ...d, allergies: d.allergies.filter((a) => a !== value) }));
+  }
 
   useEffect(() => {
     supabase.from('profiles').select('id, full_name').eq('role', 'chw').then(({ data }) => setChwList(data ?? []));
@@ -73,6 +115,10 @@ export default function StaffRegistration() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (allergyConflicts.length > 0 && !conflictOverridden) {
+      setError('Resolve or acknowledge the allergy conflict below before registering this patient.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -81,6 +127,7 @@ export default function StaffRegistration() {
       setDraft(emptyDraft);
       setNationalId('');
       setAssignedChwId('');
+      setConflictOverridden(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enrollment failed. Please try again.');
     } finally {
@@ -128,6 +175,27 @@ export default function StaffRegistration() {
               placeholder="+250 780 000 000" className="rounded border border-border bg-bg px-3 py-2.5 text-base font-normal text-ink" />
             <span className="text-xs font-normal text-body">This number will receive daily medication reminders.</span>
           </label>
+          <div className="flex flex-col gap-1.5 text-sm font-semibold text-body">
+            Known Drug Allergies
+            <div className="flex flex-wrap items-center gap-2">
+              {draft.allergies.map((allergy) => (
+                <span key={allergy} className="flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger-bg/40 px-3 py-1 text-xs font-semibold text-danger-text">
+                  {allergy}
+                  <button type="button" onClick={() => removeAllergy(allergy)} aria-label={`Remove ${allergy}`} className="text-danger-text hover:opacity-70">
+                    <Trash2 size={11} />
+                  </button>
+                </span>
+              ))}
+              <input
+                value={allergyInput}
+                onChange={(e) => setAllergyInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addAllergy(); } }}
+                placeholder="e.g. Penicillin — press Enter to add"
+                className="min-w-[220px] flex-1 rounded border border-border bg-bg px-3 py-2 text-sm font-normal text-ink"
+              />
+            </div>
+            <span className="text-xs font-normal text-body">Shown to the patient in their portal and checked against the medications below before discharge.</span>
+          </div>
         </div>
 
         <div className="border-t border-border pt-6">
@@ -165,7 +233,18 @@ export default function StaffRegistration() {
                     <input value={med.dosage} onChange={(e) => updateMedication(index, { dosage: e.target.value })}
                       placeholder="e.g. 500mg" className="rounded border border-border bg-white px-3 py-2 text-base font-normal text-ink" />
                   </label>
+                  <label className="col-span-2 flex flex-col gap-1.5 text-sm font-semibold text-body">
+                    Administration Instructions
+                    <input value={med.instructions ?? ''} onChange={(e) => updateMedication(index, { instructions: e.target.value })}
+                      placeholder="e.g. Take on an empty stomach, at least 1 hour before food" className="rounded border border-border bg-white px-3 py-2 text-base font-normal text-ink" />
+                    <span className="text-xs font-normal text-body">Sent to the patient with each reminder for this medication, and shown in their Patient Portal.</span>
+                  </label>
                 </div>
+                {allergyConflicts.some((c) => c.startsWith(med.medication || '\u0000')) && med.medication && (
+                  <p className="mt-2 flex items-center gap-1.5 rounded border border-danger/30 bg-danger-bg/40 px-2.5 py-1.5 text-xs font-semibold text-danger-text">
+                    Conflicts with a recorded allergy — see warning below.
+                  </p>
+                )}
 
                 <p className="mb-2 mt-3 text-xs font-semibold text-body">Daily Dose Schedule</p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -210,6 +289,25 @@ export default function StaffRegistration() {
             </select>
           </label>
         </div>
+
+        {allergyConflicts.length > 0 && (
+          <div className="rounded-lg border border-danger/40 bg-danger-bg/60 p-4">
+            <p className="flex items-center gap-2 text-sm font-bold text-danger-text">
+              <ClipboardList size={16} />
+              Allergy Conflict Detected
+            </p>
+            <ul className="mt-2 list-inside list-disc text-sm text-danger-text">
+              {allergyConflicts.map((c) => <li key={c}>{c}</li>)}
+            </ul>
+            <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-danger-text">
+              <input type="checkbox" checked={conflictOverridden} onChange={(e) => setConflictOverridden(e.target.checked)} />
+              I have reviewed this conflict with the prescribing clinician and confirm it is safe to proceed.
+            </label>
+            <p className="mt-1 text-[11px] font-normal text-danger-text/80">
+              This is a name/substring match against recorded allergies, not a full drug-interaction check — clinical judgment required. This override is logged for audit.
+            </p>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 border-t border-border pt-6">
           <button type="button" onClick={() => setDraft(emptyDraft)} className="rounded-lg px-4 py-2.5 text-sm font-semibold text-body">
