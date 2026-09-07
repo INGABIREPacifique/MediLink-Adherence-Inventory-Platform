@@ -15,10 +15,10 @@ const MOCK_BATCH = {
   id: 'BX-8903',
   contents: 'Insulin Batch #BX-8903',
   coldChainRange: '2°C – 8°C',
-  sourceHub: 'National Medical Store, Kigali',
-  expectedQty: 50,
-  dispatchedAt: 'Today, 06:40 AM',
-  driver: 'Emmanuel Habimana',
+  sourceHub: 'Kigali Central Medical Stores',
+  expectedQty: 250,
+  dispatchedAt: '08:30 AM',
+  driver: 'Jean-Paul Ndoli',
 };
 
 type Step = 'incoming' | 'integrity' | 'discrepancies' | 'success';
@@ -42,22 +42,26 @@ export default function DeliveryReceipt() {
       <div className="mx-auto w-full max-w-lg rounded-lg border border-border bg-white p-6 shadow-sm">
         {step === 'incoming' && (
           <div className="flex flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <span className="flex size-12 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy"><Truck size={20} /></span>
-              <div>
-                <p className="font-bold text-ink">{MOCK_BATCH.contents}</p>
-                <p className="text-sm text-body">Cold Chain Requirement: {MOCK_BATCH.coldChainRange}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex size-12 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy"><Truck size={20} /></span>
+                <div>
+                  <p className="font-bold text-ink">{MOCK_BATCH.contents}</p>
+                  <p className="text-sm text-body">Cold Chain Requirement: {MOCK_BATCH.coldChainRange}</p>
+                </div>
               </div>
+              <span className="rounded bg-warning-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-warning-text">Expected Today</span>
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 text-sm">
               <div><p className="text-xs font-semibold uppercase text-body">Source Hub</p><p className="font-semibold text-ink">{MOCK_BATCH.sourceHub}</p></div>
-              <div><p className="text-xs font-semibold uppercase text-body">Expected Qty</p><p className="font-semibold text-ink">{MOCK_BATCH.expectedQty} vials</p></div>
+              <div><p className="text-xs font-semibold uppercase text-body">Expected Qty</p><p className="font-semibold text-ink">{MOCK_BATCH.expectedQty} Vials</p></div>
               <div><p className="text-xs font-semibold uppercase text-body">Dispatched At</p><p className="font-semibold text-ink">{MOCK_BATCH.dispatchedAt}</p></div>
               <div><p className="text-xs font-semibold uppercase text-body">Driver</p><p className="font-semibold text-ink">{MOCK_BATCH.driver}</p></div>
             </div>
             <button onClick={() => setStep('integrity')} className="rounded-lg bg-navy px-4 py-3 text-sm font-semibold text-white">
-              Begin Receiving
+              Start Receipt Process
             </button>
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-body">Requires Temperature Log Verification</p>
           </div>
         )}
 
