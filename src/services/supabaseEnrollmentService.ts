@@ -21,7 +21,7 @@ import type { EnrollmentService } from './enrollmentService';
 export async function enrollPatient(draft: EnrollmentDraft, assignedChwId?: string | null): Promise<Patient> {
   const { data: patient, error: patientError } = await supabase
     .from('patients')
-    .insert({ name: draft.patientName, phone: draft.phone, assigned_chw_id: assignedChwId ?? null })
+    .insert({ name: draft.patientName, phone: draft.phone, assigned_chw_id: assignedChwId ?? null, known_allergies: draft.allergies })
     .select('id, name, phone')
     .single();
   if (patientError || !patient) throw patientError ?? new Error('Failed to create patient');
@@ -40,6 +40,7 @@ export async function enrollPatient(draft: EnrollmentDraft, assignedChwId?: stri
         start_date: med.startDate,
         preferred_channel: draft.preferredChannel,
         language: draft.language,
+        instructions: med.instructions?.trim() || null,
       })
       .select('id, schedule_times, start_date, end_date')
       .single();

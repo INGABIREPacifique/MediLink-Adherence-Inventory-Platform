@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { ShieldAlert, Stethoscope, Pill } from 'lucide-react';
+import { getPatientHistory } from '../../services/supabasePatientHistoryService';
 
-// FRONTEND ONLY -- mock data, read-only mirror of the nurse-facing
-// PatientMedicalRecord page (src/pages/PatientMedicalRecord.tsx). No edit
-// controls anywhere on this page, by design: the patient can view but the
-// nurse/care team owns the record.
+// Read-only mirror of the nurse-facing PatientMedicalRecord page
+// (src/pages/PatientMedicalRecord.tsx). No edit controls anywhere on this
+// page, by design: the patient can view but the nurse/care team owns the
+// record.
 //
 // This is the screen meant to solve the "traveled abroad, foreign
 // hospital has no way to see my medical history" problem -- the patient
@@ -11,8 +13,13 @@ import { ShieldAlert, Stethoscope, Pill } from 'lucide-react';
 // doc's deferred decision) and a foreign provider can read this directly.
 // No separate export/sharing system invented here; visibility through the
 // portal itself is the mechanism, per explicit direction.
-
-const allergies = ['Penicillin'];
+//
+// Allergies are real as of migration 0015 (patients.known_allergies),
+// pulled via the same DEMO_PATIENT_ID pattern used in
+// PatientDischargeSummary until real patient login exists. Conditions and
+// the medication list below are still mock -- no `conditions` table yet,
+// and this page isn't wired to prescriptions yet either.
+const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
 
 const conditions = [{ name: 'Type 2 Diabetes', diagnosedOn: '2022-03-14' }];
 
@@ -22,6 +29,15 @@ const medications = [
 ];
 
 export default function PatientMedicalRecords() {
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPatientHistory(DEMO_PATIENT_ID)
+      .then((history) => setAllergies(history.patient.knownAllergies))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -35,7 +51,8 @@ export default function PatientMedicalRecords() {
           Known Allergies
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {allergies.length === 0 && <span className="text-sm text-danger-text">None recorded.</span>}
+          {loading && <span className="text-sm text-danger-text">Loading…</span>}
+          {!loading && allergies.length === 0 && <span className="text-sm text-danger-text">None recorded.</span>}
           {allergies.map((a) => (
             <span key={a} className="rounded-full border border-danger/30 bg-white px-3 py-1 text-xs font-semibold text-danger-text">{a}</span>
           ))}

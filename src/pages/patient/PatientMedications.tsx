@@ -1,16 +1,30 @@
+import { useEffect, useState } from 'react';
 import { Pill, Clock, ShieldAlert } from 'lucide-react';
+import { getPatientHistory } from '../../services/supabasePatientHistoryService';
 
-// FRONTEND ONLY -- mock data. Mirrors what a nurse records in Staff
-// Registration at enrollment/discharge -- read-only here, no edit controls,
-// per the "nurse owns it, patient just sees it" design.
+// Medications list below is still mock -- this page isn't wired to
+// prescriptions yet. Allergies are real as of migration 0015
+// (patients.known_allergies), pulled via the same DEMO_PATIENT_ID pattern
+// used in PatientDischargeSummary until real patient login exists.
+// Read-only here either way, no edit controls, per the "nurse owns it,
+// patient just sees it" design.
+const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
+
 const medications = [
   { name: 'Rifampicin/Isoniazid', dosage: '150mg/75mg', schedule: '8:00 AM', instructions: 'Take on an empty stomach, at least 1 hour before food.' },
   { name: 'Pyridoxine', dosage: '25mg', schedule: '8:00 PM', instructions: 'Take with your evening meal.' },
 ];
 
-const allergies = ['Penicillin'];
-
 export default function PatientMedications() {
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPatientHistory(DEMO_PATIENT_ID)
+      .then((history) => setAllergies(history.patient.knownAllergies))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -18,7 +32,7 @@ export default function PatientMedications() {
         <p className="text-body">What you're taking and when.</p>
       </div>
 
-      {allergies.length > 0 && (
+      {!loading && allergies.length > 0 && (
         <div className="rounded-lg border border-danger/30 bg-danger-bg/40 p-4">
           <p className="flex items-center gap-2 text-sm font-bold text-danger-text">
             <ShieldAlert size={16} />

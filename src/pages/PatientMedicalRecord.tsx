@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ShieldAlert, Stethoscope, Pill, Plus, Trash2, Download } from 'lucide-react';
 import { getDischargeSummary, type DischargeSummaryData } from '../services/supabaseDischargeService';
-import { getPatientHistory } from '../services/supabasePatientHistoryService';
+import { getPatientHistory, updatePatientAllergies } from '../services/supabasePatientHistoryService';
 
 // A single aggregated "Medical Record History" view for a nurse -- pulls
 // together the pieces that already exist as real Supabase data
@@ -10,11 +10,11 @@ import { getPatientHistory } from '../services/supabasePatientHistoryService';
 // getPatientHistory) plus two sections the schema doesn't capture yet:
 // Allergies and Conditions/Diagnoses.
 //
-// Frontend-first, per the project's build order: allergies/conditions are
-// edited and held in local component state here, NOT yet written to
-// Supabase (there's no `known_allergies` column or `conditions` table
-// yet -- that's the backend follow-up once this frontend shape is
-// confirmed). This mirrors the same honest-placeholder pattern used
+// Frontend-first, per the project's build order: allergies now persist to
+// Supabase (migration 0015 added patients.known_allergies, wired via
+// updatePatientAllergies). Conditions/diagnoses are still local component
+// state only -- no `conditions` table exists yet, that's the next backend
+// follow-up. This mirrors the same honest-placeholder pattern used
 // elsewhere in the project (e.g. AI Forecasting) rather than silently
 // pretending it persists.
 //
@@ -47,19 +47,29 @@ export default function PatientMedicalRecord() {
         setSummary(dischargeSummary);
         setPatientName(history.patient.name);
         setPatientPhone(history.patient.phone);
+        setAllergies(history.patient.knownAllergies);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [patientId]);
 
-  function addAllergy() {
+  async function addAllergy() {
     const value = allergyInput.trim();
-    if (!value || allergies.some((a) => a.toLowerCase() === value.toLowerCase())) {
+    if (!value || allergies.some((a) => a.toLowerCase() === value.toLowerCase()) || !patientId) {
       setAllergyInput('');
       return;
     }
-    setAllergies((a) => [...a, value]);
+    const next = [...allergies, value];
+    setAllergies(next);
     setAllergyInput('');
+    await updatePatientAllergies(patientId, next);
+  }
+
+  async function removeAllergy(value: string) {
+    if (!patientId) return;
+    const next = allergies.filter((a) => a !== value);
+    setAllergies(next);
+    await updatePatientAllergies(patientId, next);
   }
 
   function addCondition() {
@@ -106,7 +116,7 @@ export default function PatientMedicalRecord() {
           {allergies.map((a) => (
             <span key={a} className="flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger-bg/40 px-3 py-1 text-xs font-semibold text-danger-text">
               {a}
-              <button type="button" onClick={() => setAllergies((list) => list.filter((x) => x !== a))} aria-label={`Remove ${a}`} className="text-danger-text hover:opacity-70">
+              <button type="button" onClick={() => removeAllergy(a)} aria-label={`Remove ${a}`} className="text-danger-text hover:opacity-70">
                 <Trash2 size={11} />
               </button>
             </span>

@@ -6,11 +6,10 @@ export interface PendingDose {
   medication: string;
   dosage: string;
   scheduledFor: string;
-  // Real per-medication instructions await a `prescriptions.instructions`
-  // column (frontend-first: captured in Staff Registration and typed on
-  // PrescriptionSchedule, but not yet persisted -- backend follow-up).
-  // Undefined here rather than faked; callers should render nothing/a
-  // generic line when absent, not invent guidance the nurse didn't write.
+  // Real column as of migration 0015. Still optional: prescriptions
+  // created before that migration have no instructions recorded, so
+  // callers should render nothing/a generic line when absent rather than
+  // inventing guidance the nurse didn't write.
   instructions?: string;
 }
 
@@ -28,18 +27,19 @@ export interface PendingAppointment {
 export async function getPendingDoses(): Promise<PendingDose[]> {
   const { data, error } = await supabase
     .from('dose_reminders')
-    .select('id, scheduled_for, prescriptions:prescription_id ( medication, dosage, patients:patient_id ( name ) )')
+    .select('id, scheduled_for, prescriptions:prescription_id ( medication, dosage, instructions, patients:patient_id ( name ) )')
     .eq('confirmed', false)
     .lte('scheduled_for', new Date().toISOString())
     .order('scheduled_for', { ascending: false })
     .limit(20);
   if (error) throw error;
-  return ((data ?? []) as unknown as { id: string; scheduled_for: string; prescriptions: { medication: string; dosage: string | null; patients: { name: string } | null } | null }[]).map((r) => ({
+  return ((data ?? []) as unknown as { id: string; scheduled_for: string; prescriptions: { medication: string; dosage: string | null; instructions: string | null; patients: { name: string } | null } | null }[]).map((r) => ({
     id: r.id,
     patientName: r.prescriptions?.patients?.name ?? 'Unknown patient',
     medication: r.prescriptions?.medication ?? '',
     dosage: r.prescriptions?.dosage ?? '',
     scheduledFor: r.scheduled_for,
+    instructions: r.prescriptions?.instructions ?? undefined,
   }));
 }
 

@@ -4,6 +4,7 @@ export interface PatientSummary {
   id: string;
   name: string;
   phone: string;
+  knownAllergies: string[];
   adherenceRatePct: number;
   dosesTaken: number;
   dosesMissed: number;
@@ -33,10 +34,11 @@ export interface PatientHistory {
 export async function getPatientHistory(patientId: string): Promise<PatientHistory> {
   const { data: patient, error: patientError } = await supabase
     .from('patients')
-    .select('id, name, phone')
+    .select('id, name, phone, known_allergies')
     .eq('id', patientId)
     .single();
   if (patientError || !patient) throw patientError ?? new Error('Patient not found');
+  const patientSummaryBase = { id: patient.id, name: patient.name, phone: patient.phone, knownAllergies: patient.known_allergies ?? [] };
 
   const { data: prescriptions } = await supabase
     .from('prescriptions')
@@ -48,7 +50,7 @@ export async function getPatientHistory(patientId: string): Promise<PatientHisto
 
   if (prescriptionIds.length === 0) {
     return {
-      patient: { ...patient, adherenceRatePct: 0, dosesTaken: 0, dosesMissed: 0 },
+      patient: { ...patientSummaryBase, adherenceRatePct: 0, dosesTaken: 0, dosesMissed: 0 },
       weekStatus: [],
       recentDoses: [],
     };
@@ -109,22 +111,23 @@ export async function getPatientHistory(patientId: string): Promise<PatientHisto
   });
 
   return {
-    patient: { ...patient, adherenceRatePct, dosesTaken, dosesMissed },
+    patient: { ...patientSummaryBase, adherenceRatePct, dosesTaken, dosesMissed },
     weekStatus,
     recentDoses,
   };
 }
 
 export async function getAllPatients(): Promise<PatientSummary[]> {
-  const { data: patients, error } = await supabase.from('patients').select('id, name, phone').order('name');
+  const { data: patients, error } = await supabase.from('patients').select('id, name, phone, known_allergies').order('name');
   if (error) throw error;
 
   // N+1 is fine at pilot scale (single facility, dozens of patients, not thousands).
   const withStats = await Promise.all(
     (patients ?? []).map(async (p) => {
+      const base = { id: p.id, name: p.name, phone: p.phone, knownAllergies: p.known_allergies ?? [] };
       const { data: prescriptions } = await supabase.from('prescriptions').select('id').eq('patient_id', p.id);
       const prescriptionIds = (prescriptions ?? []).map((pr) => pr.id);
-      if (prescriptionIds.length === 0) return { ...p, adherenceRatePct: 0, dosesTaken: 0, dosesMissed: 0 };
+      if (prescriptionIds.length === 0) return { ...base, adherenceRatePct: 0, dosesTaken: 0, dosesMissed: 0 };
 
       const { data: doses } = await supabase
         .from('dose_reminders')
@@ -134,7 +137,7 @@ export async function getAllPatients(): Promise<PatientSummary[]> {
       const rows = doses ?? [];
       const dosesTaken = rows.filter((d) => d.confirmed).length;
       return {
-        ...p,
+        ...base,
         dosesTaken,
         dosesMissed: rows.length - dosesTaken,
         adherenceRatePct: rows.length === 0 ? 0 : Math.round((dosesTaken / rows.length) * 100),
@@ -142,4 +145,12 @@ export async function getAllPatients(): Promise<PatientSummary[]> {
     })
   );
   return withStats;
+}
+
+// Persists allergy edits made on the nurse-facing Medical Record page.
+// Real write as of migration 0015 -- previously this data only ever lived
+// in local component state and was lost on refresh.
+export async function updatePatientAllergies(patientId: string, allergies: string[]): Promise<void> {
+  const { error } = await supabase.from('patients').update({ known_allergies: allergies }).eq('id', patientId);
+  if (error) throw error;
 }
