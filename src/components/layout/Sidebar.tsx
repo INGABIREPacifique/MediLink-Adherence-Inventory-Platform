@@ -22,6 +22,7 @@ import {
   GraduationCap,
   Truck,
   Thermometer,
+  MapPin,
 } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 
@@ -51,6 +52,7 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
     items: [
       { to: '/reports', label: 'Facility Analytics', icon: BarChart3 },
       { to: '/supervisor', label: 'Supervisor Dashboard', icon: ShieldCheck },
+      { to: '/supervisor/escalations', label: 'Escalation Resolution', icon: AlertTriangle },
       { to: '/replenishment', label: 'Replenishment Approval', icon: Package },
       { to: '/order-tracking', label: 'Order Tracking', icon: Truck },
       { to: '/cold-chain', label: 'Cold Chain Monitor', icon: Thermometer },
@@ -82,6 +84,8 @@ const chwNav = [
   { to: '/chw/inventory', label: 'Local Inventory', icon: Package },
   { to: '/chw/log-usage', label: 'Log Medication Usage', icon: ClipboardList },
   { to: '/chw/request-status', label: 'Request Status', icon: Truck },
+  { to: '/chw/map', label: 'Patient Map', icon: MapPin },
+  { to: '/chw/tasks', label: 'Tasks & Alerts', icon: ClipboardList },
   { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
   { to: '/chw/training', label: 'Training Portal', icon: GraduationCap },
 ];

@@ -50,6 +50,10 @@ import DeliveryReceipt from './pages/DeliveryReceipt';
 import ReplenishmentRequest from './pages/ReplenishmentRequest';
 import LogMedicationUsage from './pages/chw/LogMedicationUsage';
 import RequestStatusTracker from './pages/chw/RequestStatusTracker';
+import ChwPatientMap from './pages/chw/ChwPatientMap';
+import ChwTasksList from './pages/chw/ChwTasksList';
+import EscalationDetail from './pages/EscalationDetail';
+import ChwSupervisorEscalationDashboard from './pages/ChwSupervisorEscalationDashboard';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -145,6 +149,8 @@ export default function App() {
                   <Route path="/chw/inventory" element={<ChwLocalInventory />} />
                   <Route path="/chw/log-usage" element={<LogMedicationUsage />} />
                   <Route path="/chw/request-status" element={<RequestStatusTracker />} />
+                  <Route path="/chw/map" element={<ChwPatientMap />} />
+                  <Route path="/chw/tasks" element={<ChwTasksList />} />
                   <Route path="/chw/training" element={<ChwTraining />} />
                   <Route path="/patients" element={<PatientDirectory />} />
                   <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
@@ -152,6 +158,8 @@ export default function App() {
                   <Route path="/audit-log" element={<AuditLog />} />
                   <Route path="/feedback" element={<PilotFeedbackLog />} />
                   <Route path="/supervisor" element={<SupervisorDashboard />} />
+                  <Route path="/supervisor/escalations" element={<ChwSupervisorEscalationDashboard />} />
+                  <Route path="/escalation/:escalationId" element={<EscalationDetail />} />
                   <Route path="/replenishment" element={<ReplenishmentApproval />} />
                   <Route path="/cold-chain" element={<ColdChainMonitor />} />
                   <Route path="/order-tracking" element={<OrderTracking />} />
