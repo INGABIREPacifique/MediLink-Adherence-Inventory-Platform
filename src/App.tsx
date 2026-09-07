@@ -46,6 +46,10 @@ import ReplenishmentApproval from './pages/ReplenishmentApproval';
 import ColdChainMonitor from './pages/ColdChainMonitor';
 import OrderTracking from './pages/OrderTracking';
 import ThermalAuditLog from './pages/ThermalAuditLog';
+import DeliveryReceipt from './pages/DeliveryReceipt';
+import ReplenishmentRequest from './pages/ReplenishmentRequest';
+import LogMedicationUsage from './pages/chw/LogMedicationUsage';
+import RequestStatusTracker from './pages/chw/RequestStatusTracker';
 import PatientDirectory from './pages/PatientDirectory';
 import PatientHistoryPage from './pages/PatientHistory';
 import HelpGuide from './pages/HelpGuide';
@@ -139,6 +143,8 @@ export default function App() {
                   <Route path="/chw/patients" element={<ChwPatients />} />
                   <Route path="/chw/visit-log" element={<ChwVisitLog />} />
                   <Route path="/chw/inventory" element={<ChwLocalInventory />} />
+                  <Route path="/chw/log-usage" element={<LogMedicationUsage />} />
+                  <Route path="/chw/request-status" element={<RequestStatusTracker />} />
                   <Route path="/chw/training" element={<ChwTraining />} />
                   <Route path="/patients" element={<PatientDirectory />} />
                   <Route path="/patients/:patientId" element={<PatientHistoryPage />} />
@@ -150,6 +156,8 @@ export default function App() {
                   <Route path="/cold-chain" element={<ColdChainMonitor />} />
                   <Route path="/order-tracking" element={<OrderTracking />} />
                   <Route path="/thermal-audit" element={<ThermalAuditLog />} />
+                  <Route path="/delivery-receipt" element={<DeliveryReceipt />} />
+                  <Route path="/replenishment-request" element={<ReplenishmentRequest />} />
                 </Routes>
               </AppShell>
             </ProtectedRoute>

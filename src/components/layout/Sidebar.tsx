@@ -55,6 +55,8 @@ const nurseAdminNavGroups: { section: string; items: { to: string; label: string
       { to: '/order-tracking', label: 'Order Tracking', icon: Truck },
       { to: '/cold-chain', label: 'Cold Chain Monitor', icon: Thermometer },
       { to: '/thermal-audit', label: 'Thermal Audit Log', icon: Thermometer },
+      { to: '/delivery-receipt', label: 'Delivery Receipt', icon: Truck },
+      { to: '/replenishment-request', label: 'Replenishment Request', icon: Package },
       { to: '/forecasting', label: 'AI Forecasting', icon: Radio },
       { to: '/discharge-summary', label: 'Discharge Summary', icon: FileCheck },
     ],
@@ -78,6 +80,8 @@ const chwNav = [
   { to: '/chw/patients', label: 'My Patients', icon: Users },
   { to: '/chw/visit-log', label: 'Visit Log', icon: ClipboardList },
   { to: '/chw/inventory', label: 'Local Inventory', icon: Package },
+  { to: '/chw/log-usage', label: 'Log Medication Usage', icon: ClipboardList },
+  { to: '/chw/request-status', label: 'Request Status', icon: Truck },
   { to: '/ussd-simulator', label: 'USSD Simulator', icon: Smartphone },
   { to: '/chw/training', label: 'Training Portal', icon: GraduationCap },
 ];
