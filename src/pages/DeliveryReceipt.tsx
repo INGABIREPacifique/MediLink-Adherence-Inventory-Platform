@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Truck, ShieldCheck, ClipboardList, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { getNextPendingDelivery, completeDeliveryReceipt, type DeliveryBatch } from '../services/supabasePharmacyLogisticsService';
 
 // Matches Figma nodes 1:6447 "Delivery Receipt - Incoming Batch", 1:6541
 // "Integrity Check", 1:6659 "Log Discrepancies", 1:6722 "Success" -- a
@@ -8,35 +9,72 @@ import { Truck, ShieldCheck, ClipboardList, CheckCircle2, ArrowLeft } from 'luci
 // the four Figma screens are one continuous transaction, not independent
 // destinations a user navigates back to.
 //
-// FRONTEND ONLY -- mock batch data, no backend wiring yet (matches the
-// project's existing pattern: real cold-chain/thermal-audit data exists
-// elsewhere, but this specific receiving workflow is new).
-const MOCK_BATCH = {
-  id: 'BX-8903',
-  contents: 'Insulin Batch #BX-8903',
-  coldChainRange: '2°C – 8°C',
-  sourceHub: 'Kigali Central Medical Stores',
-  expectedQty: 250,
-  dispatchedAt: '08:30 AM',
-  driver: 'Jean-Paul Ndoli',
-};
+// Real data as of migration 0017 (deliveries table): loads the oldest
+// pending delivery and writes the actual receipt outcome back on submit.
 
-type Step = 'incoming' | 'integrity' | 'discrepancies' | 'success';
+type Step = 'loading' | 'empty' | 'incoming' | 'integrity' | 'discrepancies' | 'success';
 
 export default function DeliveryReceipt() {
-  const [step, setStep] = useState<Step>('incoming');
+  const [step, setStep] = useState<Step>('loading');
+  const [batch, setBatch] = useState<DeliveryBatch | null>(null);
   const [checklist, setChecklist] = useState({ sealIntact: false, quantityMatches: false, packagingUndamaged: false });
-  const [actualQuantity, setActualQuantity] = useState(String(MOCK_BATCH.expectedQty));
+  const [actualQuantity, setActualQuantity] = useState('');
   const [damagedItems, setDamagedItems] = useState(false);
   const [notes, setNotes] = useState('');
+  const [accepted, setAccepted] = useState(true);
 
-  const thermalOk = true; // mock: real cold-chain sensor read would come from the existing Cold Chain Monitor feed
+  function loadBatch() {
+    setStep('loading');
+    getNextPendingDelivery().then((b) => {
+      setBatch(b);
+      setActualQuantity(b ? String(b.expectedQuantity) : '');
+      setChecklist({ sealIntact: false, quantityMatches: false, packagingUndamaged: false });
+      setDamagedItems(false);
+      setNotes('');
+      setStep(b ? 'incoming' : 'empty');
+    });
+  }
+
+  useEffect(loadBatch, []);
+
+  const thermalOk = true; // real cold-chain sensor read would come from Cold Chain Monitor's live feed; treated as pre-checked here since this flow focuses on physical receipt, not transit temperature
+
+  async function submitReceipt(finalChecklist: typeof checklist, finalNotes: string) {
+    if (!batch) return;
+    const isAccepted = Object.values(finalChecklist).every(Boolean);
+    setAccepted(isAccepted);
+    await completeDeliveryReceipt(batch.id, {
+      actualQuantity: Number(actualQuantity) || batch.expectedQuantity,
+      sealIntact: finalChecklist.sealIntact,
+      quantityMatches: finalChecklist.quantityMatches,
+      packagingUndamaged: finalChecklist.packagingUndamaged,
+      discrepancyNotes: finalNotes || undefined,
+    });
+    setStep('success');
+  }
+
+  if (step === 'loading') {
+    return <p className="text-body">Loading next delivery…</p>;
+  }
+
+  if (step === 'empty') {
+    return (
+      <div className="flex flex-col gap-6">
+        <h1 className="text-3xl font-bold text-ink">Delivery Receipt</h1>
+        <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-3 rounded-lg border border-border bg-white p-8 text-center shadow-sm">
+          <Truck size={28} className="text-body" />
+          <p className="font-semibold text-ink">No deliveries awaiting receipt</p>
+          <p className="text-sm text-body">New incoming batches from Replenishment Approval will appear here once dispatched.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold text-ink">Delivery Receipt</h1>
-        <p className="text-body">Receiving {MOCK_BATCH.contents}, source: {MOCK_BATCH.sourceHub}.</p>
+        <p className="text-body">Receiving {batch!.batchReference}, source: {batch!.sourceHub}.</p>
       </div>
 
       <div className="mx-auto w-full max-w-lg rounded-lg border border-border bg-white p-6 shadow-sm">
@@ -46,17 +84,17 @@ export default function DeliveryReceipt() {
               <div className="flex items-center gap-3">
                 <span className="flex size-12 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy"><Truck size={20} /></span>
                 <div>
-                  <p className="font-bold text-ink">{MOCK_BATCH.contents}</p>
-                  <p className="text-sm text-body">Cold Chain Requirement: {MOCK_BATCH.coldChainRange}</p>
+                  <p className="font-bold text-ink">{batch!.batchReference}</p>
+                  <p className="text-sm text-body">Cold Chain Requirement: 2°C – 8°C</p>
                 </div>
               </div>
               <span className="rounded bg-warning-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-warning-text">Expected Today</span>
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 text-sm">
-              <div><p className="text-xs font-semibold uppercase text-body">Source Hub</p><p className="font-semibold text-ink">{MOCK_BATCH.sourceHub}</p></div>
-              <div><p className="text-xs font-semibold uppercase text-body">Expected Qty</p><p className="font-semibold text-ink">{MOCK_BATCH.expectedQty} Vials</p></div>
-              <div><p className="text-xs font-semibold uppercase text-body">Dispatched At</p><p className="font-semibold text-ink">{MOCK_BATCH.dispatchedAt}</p></div>
-              <div><p className="text-xs font-semibold uppercase text-body">Driver</p><p className="font-semibold text-ink">{MOCK_BATCH.driver}</p></div>
+              <div><p className="text-xs font-semibold uppercase text-body">Source Hub</p><p className="font-semibold text-ink">{batch!.sourceHub}</p></div>
+              <div><p className="text-xs font-semibold uppercase text-body">Expected Qty</p><p className="font-semibold text-ink">{batch!.expectedQuantity} Vials</p></div>
+              <div><p className="text-xs font-semibold uppercase text-body">Dispatched At</p><p className="font-semibold text-ink">{batch!.dispatchedAt ? new Date(batch!.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
+              <div><p className="text-xs font-semibold uppercase text-body">Driver</p><p className="font-semibold text-ink">{batch!.driverName ?? '—'}</p></div>
             </div>
             <button onClick={() => setStep('integrity')} className="rounded-lg bg-navy px-4 py-3 text-sm font-semibold text-white">
               Start Receipt Process
@@ -76,7 +114,7 @@ export default function DeliveryReceipt() {
             <p className="text-xs font-semibold uppercase text-body">Physical Inspection</p>
             {[
               { key: 'sealIntact' as const, label: 'Batch Seal Intact', hint: 'Check for any tampering on main cooler' },
-              { key: 'quantityMatches' as const, label: 'Quantity Matches', hint: `Verify ${MOCK_BATCH.expectedQty} vials present upon opening` },
+              { key: 'quantityMatches' as const, label: 'Quantity Matches', hint: `Verify ${batch!.expectedQuantity} vials present upon opening` },
               { key: 'packagingUndamaged' as const, label: 'Packaging Undamaged', hint: 'No crushed boxes or leaked fluids' },
             ].map(({ key, label, hint }) => (
               <label key={key} className="flex items-start gap-3 rounded border border-border bg-bg p-3">
@@ -87,7 +125,7 @@ export default function DeliveryReceipt() {
             <div className="flex gap-3">
               <button onClick={() => setStep('incoming')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
               <button
-                onClick={() => setStep(Object.values(checklist).every(Boolean) ? 'success' : 'discrepancies')}
+                onClick={() => (Object.values(checklist).every(Boolean) ? submitReceipt(checklist, '') : setStep('discrepancies'))}
                 className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white"
               >
                 {Object.values(checklist).every(Boolean) ? 'Confirm Receipt' : 'Report Discrepancy Instead'}
@@ -113,7 +151,7 @@ export default function DeliveryReceipt() {
             </label>
             <div className="flex gap-3">
               <button onClick={() => setStep('integrity')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
-              <button onClick={() => setStep('success')} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white">Submit Report</button>
+              <button onClick={() => submitReceipt(checklist, damagedItems ? `Damaged items reported. ${notes}` : notes)} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white">Submit Report</button>
             </div>
           </div>
         )}
@@ -123,9 +161,9 @@ export default function DeliveryReceipt() {
             <span className="flex size-16 items-center justify-center rounded-full bg-success-bg text-success"><CheckCircle2 size={32} /></span>
             <p className="text-2xl font-bold text-ink">Receipt Recorded</p>
             <p className="max-w-sm text-sm text-body">
-              {MOCK_BATCH.contents} has been {Object.values(checklist).every(Boolean) ? 'accepted into stock' : 'logged with a discrepancy report'}.
+              {batch!.batchReference} has been {accepted ? 'accepted into stock' : 'logged with a discrepancy report'}.
             </p>
-            <button onClick={() => setStep('incoming')} className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white">Receive Another Batch</button>
+            <button onClick={loadBatch} className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white">Receive Another Batch</button>
           </div>
         )}
       </div>

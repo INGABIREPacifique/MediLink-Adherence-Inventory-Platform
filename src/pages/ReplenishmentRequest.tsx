@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Package, CheckCircle2, ArrowLeft, Minus, Plus } from 'lucide-react';
+import { createReplenishmentRequest } from '../services/supabasePharmacyLogisticsService';
 
 // Matches Figma nodes 1:7268 "Select Items", 1:7132 "Review & Submit",
 // 1:7078 "Success" -- a nurse/pharmacy staff member requesting restock,
 // distinct from the existing Replenishment Approval page (that's the
 // admin approving requests; this is the requesting side).
-// FRONTEND ONLY -- mock catalogue, no backend wiring yet.
+// Real write as of migration 0017 (replenishment_requests +
+// replenishment_request_items).
 const CATALOGUE = [
   { name: 'Amoxicillin 500mg', unit: 'boxes' },
   { name: 'Paracetamol 500mg', unit: 'boxes' },
@@ -21,11 +23,23 @@ export default function ReplenishmentRequest() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [urgency, setUrgency] = useState<'routine' | 'urgent'>('routine');
   const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const selectedItems = CATALOGUE.filter((item) => (quantities[item.name] ?? 0) > 0);
 
   function setQty(name: string, delta: number) {
     setQuantities((q) => ({ ...q, [name]: Math.max(0, (q[name] ?? 0) + delta) }));
+  }
+
+  async function submit() {
+    setSubmitting(true);
+    await createReplenishmentRequest({
+      items: selectedItems.map((item) => ({ itemName: item.name, quantity: quantities[item.name], unit: item.unit })),
+      urgency,
+      note: note || undefined,
+    });
+    setSubmitting(false);
+    setStep('success');
   }
 
   if (step === 'success') {
@@ -110,7 +124,7 @@ export default function ReplenishmentRequest() {
           </label>
           <div className="flex gap-3">
             <button onClick={() => setStep('select')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
-            <button onClick={() => setStep('success')} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white">Submit Request</button>
+            <button onClick={submit} disabled={submitting} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{submitting ? 'Submitting…' : 'Submit Request'}</button>
           </div>
         </div>
       )}
