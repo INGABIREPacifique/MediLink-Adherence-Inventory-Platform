@@ -175,11 +175,12 @@ export default function DeliveryReceipt() {
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
               Receipt Notes
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Describe any discrepancies, damaged packaging, or other issues..." className="rounded border border-border bg-bg px-3 py-2 text-ink" />
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value.slice(0, 250))} rows={3} maxLength={250} placeholder="Describe any discrepancies, damaged packaging, or other issues..." className="rounded border border-border bg-bg px-3 py-2 text-ink" />
+              <span className="self-end text-xs font-semibold text-body">{notes.length}/250</span>
             </label>
             <div className="flex gap-3">
               <button onClick={() => setStep('integrity')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
-              <button onClick={() => submitReceipt(checklist, damagedItems ? `Damaged items reported. ${notes}` : notes)} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white">Submit Report</button>
+              <button onClick={() => submitReceipt(checklist, damagedItems ? `Damaged items reported. ${notes}` : notes)} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white">Submit Log</button>
             </div>
           </div>
         )}
