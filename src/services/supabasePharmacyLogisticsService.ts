@@ -59,6 +59,19 @@ export async function getColdChainReadings(): Promise<ColdChainReading[]> {
   }));
 }
 
+export async function getLatestReadingForBatch(batchReference: string): Promise<ColdChainReading | null> {
+  const { data, error } = await supabase
+    .from('cold_chain_readings')
+    .select('id, batch_reference, temperature_celsius, within_range, recorded_at')
+    .eq('batch_reference', batchReference)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { id: data.id, label: data.batch_reference ?? batchReference, temperatureCelsius: data.temperature_celsius, withinRange: data.within_range, recordedAt: data.recorded_at };
+}
+
 export async function logColdChainReading(input: { batchReference?: string; shipmentId?: string; temperatureCelsius: number }): Promise<void> {
   const { error } = await supabase.from('cold_chain_readings').insert({
     batch_reference: input.batchReference ?? null,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Truck, ShieldCheck, ClipboardList, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { getNextPendingDelivery, completeDeliveryReceipt, type DeliveryBatch } from '../services/supabasePharmacyLogisticsService';
+import { Truck, ShieldCheck, ThermometerSnowflake, ClipboardList, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { getNextPendingDelivery, completeDeliveryReceipt, getLatestReadingForBatch, type DeliveryBatch, type ColdChainReading } from '../services/supabasePharmacyLogisticsService';
 
 // Matches Figma nodes 1:6447 "Delivery Receipt - Incoming Batch", 1:6541
 // "Integrity Check", 1:6659 "Log Discrepancies", 1:6722 "Success" -- a
@@ -9,14 +9,20 @@ import { getNextPendingDelivery, completeDeliveryReceipt, type DeliveryBatch } f
 // the four Figma screens are one continuous transaction, not independent
 // destinations a user navigates back to.
 //
-// Real data as of migration 0017 (deliveries table): loads the oldest
-// pending delivery and writes the actual receipt outcome back on submit.
+// Real data as of migration 0017 (deliveries + cold_chain_readings):
+// loads the oldest pending delivery, pulls its latest real temperature
+// reading, and writes the actual receipt outcome back on submit. The
+// Integrity Check step's design (per Figma node 1:6541) disables
+// "Confirm Integrity" during a genuine thermal alert and only allows
+// "Report Issue" -- this now reflects a real reading instead of a
+// hardcoded always-OK state.
 
 type Step = 'loading' | 'empty' | 'incoming' | 'integrity' | 'discrepancies' | 'success';
 
 export default function DeliveryReceipt() {
   const [step, setStep] = useState<Step>('loading');
   const [batch, setBatch] = useState<DeliveryBatch | null>(null);
+  const [reading, setReading] = useState<ColdChainReading | null>(null);
   const [checklist, setChecklist] = useState({ sealIntact: false, quantityMatches: false, packagingUndamaged: false });
   const [actualQuantity, setActualQuantity] = useState('');
   const [damagedItems, setDamagedItems] = useState(false);
@@ -25,19 +31,20 @@ export default function DeliveryReceipt() {
 
   function loadBatch() {
     setStep('loading');
-    getNextPendingDelivery().then((b) => {
+    getNextPendingDelivery().then(async (b) => {
       setBatch(b);
       setActualQuantity(b ? String(b.expectedQuantity) : '');
       setChecklist({ sealIntact: false, quantityMatches: false, packagingUndamaged: false });
       setDamagedItems(false);
       setNotes('');
+      setReading(b ? await getLatestReadingForBatch(b.batchReference) : null);
       setStep(b ? 'incoming' : 'empty');
     });
   }
 
   useEffect(loadBatch, []);
 
-  const thermalOk = true; // real cold-chain sensor read would come from Cold Chain Monitor's live feed; treated as pre-checked here since this flow focuses on physical receipt, not transit temperature
+  const thermalOk = reading ? reading.withinRange : true; // no reading logged yet -- nothing to flag, not the same as confirmed-safe
 
   async function submitReceipt(finalChecklist: typeof checklist, finalNotes: string) {
     if (!batch) return;
@@ -105,11 +112,27 @@ export default function DeliveryReceipt() {
 
         {step === 'integrity' && (
           <div className="flex flex-col gap-5">
+            {!thermalOk && (
+              <div className="flex gap-3 rounded-lg border border-danger bg-danger p-4 text-white">
+                <ThermometerSnowflake size={20} className="mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-bold">Thermal Excursion Detected</p>
+                  <p className="text-sm opacity-90">Temperature exceeded the safe threshold during transit. Do not administer until cleared.</p>
+                </div>
+              </div>
+            )}
             <p className="flex items-center gap-2 text-lg font-bold text-navy"><ShieldCheck size={18} /> Thermal Integrity Status</p>
             <div className={`rounded-lg p-4 text-center ${thermalOk ? 'bg-success-bg' : 'bg-danger-bg'}`}>
-              <p className={`text-sm font-bold ${thermalOk ? 'text-success-text' : 'text-danger-text'}`}>
-                {thermalOk ? 'Within cold chain range throughout transit' : 'Cold chain breach detected — escalate before accepting'}
-              </p>
+              {reading ? (
+                <>
+                  <p className={`text-3xl font-bold ${thermalOk ? 'text-success-text' : 'text-danger'}`}>{reading.temperatureCelsius}°C</p>
+                  <p className={`mt-1 text-sm font-bold ${thermalOk ? 'text-success-text' : 'text-danger-text'}`}>
+                    {thermalOk ? 'Within cold chain range throughout transit' : 'Alert: Above Safe Threshold'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm font-bold text-body">No temperature reading logged yet for this batch.</p>
+              )}
             </div>
             <p className="text-xs font-semibold uppercase text-body">Physical Inspection</p>
             {[
@@ -117,20 +140,25 @@ export default function DeliveryReceipt() {
               { key: 'quantityMatches' as const, label: 'Quantity Matches', hint: `Verify ${batch!.expectedQuantity} vials present upon opening` },
               { key: 'packagingUndamaged' as const, label: 'Packaging Undamaged', hint: 'No crushed boxes or leaked fluids' },
             ].map(({ key, label, hint }) => (
-              <label key={key} className="flex items-start gap-3 rounded border border-border bg-bg p-3">
-                <input type="checkbox" checked={checklist[key]} onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} className="mt-0.5" />
+              <label key={key} className={`flex items-start gap-3 rounded border border-border bg-bg p-3 ${!thermalOk ? 'opacity-50' : ''}`}>
+                <input type="checkbox" disabled={!thermalOk} checked={checklist[key]} onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} className="mt-0.5" />
                 <span><span className="block text-sm font-semibold text-ink">{label}</span><span className="block text-xs text-body">{hint}</span></span>
               </label>
             ))}
             <div className="flex gap-3">
               <button onClick={() => setStep('incoming')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
-              <button
-                onClick={() => (Object.values(checklist).every(Boolean) ? submitReceipt(checklist, '') : setStep('discrepancies'))}
-                className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white"
-              >
-                {Object.values(checklist).every(Boolean) ? 'Confirm Receipt' : 'Report Discrepancy Instead'}
-              </button>
+              {!thermalOk ? (
+                <button onClick={() => setStep('discrepancies')} className="flex-1 rounded-lg bg-danger px-4 py-2.5 text-sm font-semibold text-white">Report Issue</button>
+              ) : (
+                <button
+                  onClick={() => (Object.values(checklist).every(Boolean) ? submitReceipt(checklist, '') : setStep('discrepancies'))}
+                  className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  {Object.values(checklist).every(Boolean) ? 'Confirm Receipt' : 'Report Discrepancy Instead'}
+                </button>
+              )}
             </div>
+            {!thermalOk && <p className="text-center text-xs text-body">Confirmation disabled due to thermal alert.</p>}
           </div>
         )}
 
