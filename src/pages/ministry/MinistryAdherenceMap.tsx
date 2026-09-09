@@ -1,57 +1,73 @@
+import { useEffect, useState } from 'react';
 import { Users, Target, Sparkles } from 'lucide-react';
+import { getClinicalFollowUpStats, type ClinicalFollowUpStats } from '../../services/supabaseMinistryService';
+import { getFacilities, type Facility } from '../../services/supabaseMinistryService';
 
 // Matches "National Health Authority - Adherence Performance Map".
-// FRONTEND ONLY. Choropleth map replaced with a ranked district list --
-// same reasoning as every other map screen in this build: no real
-// geolocation data exists in this pilot's schema.
-const districts = [
-  { name: 'Nyarugenge', rate: 94.2 },
-  { name: 'Kicukiro', rate: 91.5 },
-  { name: 'Musanze', rate: 78.5 },
-  { name: 'Gasabo', rate: 65.1 },
-];
-
+// Choropleth map replaced with a ranked district list -- same reasoning
+// as every other map screen: no real geolocation data exists in this
+// pilot's schema. Real pilot-wide stats as of migrations 0018-0019;
+// district breakdown shows real facility counts, not fabricated
+// per-district adherence rates (same constraint as Sector Reports). The
+// "AI Insights" panel is dropped rather than filled with different
+// invented numbers -- this project's actual AI usage is scoped
+// specifically to escalation-priority ranking (see the founding
+// proposal), not national-level insight generation, which was never
+// built and shouldn't be faked here.
 export default function MinistryAdherenceMap() {
+  const [stats, setStats] = useState<ClinicalFollowUpStats | null>(null);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getClinicalFollowUpStats(), getFacilities()]).then(([s, f]) => {
+      setStats(s);
+      setFacilities(f);
+      setLoading(false);
+    });
+  }, []);
+
+  const districtGroups = Object.entries(
+    facilities.reduce<Record<string, number>>((acc, f) => {
+      const key = f.district ?? 'Unassigned';
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {})
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold text-ink">Adherence Performance Map</h1>
-      <p className="-mt-4 text-body">National overview &amp; regional correlation analysis.</p>
+      <h1 className="text-3xl font-bold text-ink">Adherence Performance Overview</h1>
+      <p className="-mt-4 text-body">Pilot-wide adherence and facility distribution.</p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-body"><Target size={15} /><p className="text-xs font-semibold uppercase">National Adherence</p></div>
-          <p className="mt-1 text-3xl font-bold text-navy">88.4%</p>
+          <div className="flex items-center gap-2 text-body"><Target size={15} /><p className="text-xs font-semibold uppercase">Pilot-Wide Adherence</p></div>
+          <p className="mt-1 text-3xl font-bold text-navy">{loading ? '—' : `${stats?.adherenceRatePct}%`}</p>
         </div>
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-body"><Users size={15} /><p className="text-xs font-semibold uppercase">Total Enrolled Cases</p></div>
-          <p className="mt-1 text-3xl font-bold text-ink">42.5k</p>
+          <div className="flex items-center gap-2 text-body"><Users size={15} /><p className="text-xs font-semibold uppercase">Total Enrolled Patients</p></div>
+          <p className="mt-1 text-3xl font-bold text-ink">{loading ? '—' : stats?.activePatients}</p>
         </div>
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-body"><Sparkles size={15} /><p className="text-xs font-semibold uppercase">Active Escalations</p></div>
-          <p className="mt-1 text-3xl font-bold text-ink">154</p>
+          <div className="flex items-center gap-2 text-body"><Sparkles size={15} /><p className="text-xs font-semibold uppercase">Pending Escalations</p></div>
+          <p className="mt-1 text-3xl font-bold text-ink">{loading ? '—' : stats?.pendingEscalations}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h3 className="mb-4 font-bold text-ink">District Performance (30 Days)</h3>
-          <div className="flex flex-col gap-3">
-            {districts.map((d) => (
-              <div key={d.name}>
-                <div className="flex justify-between text-sm font-semibold text-body"><span>{d.name}</span><span>{d.rate}%</span></div>
-                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-row-alt">
-                  <div className={`h-full ${d.rate >= 90 ? 'bg-success' : d.rate >= 70 ? 'bg-warning-text' : 'bg-danger'}`} style={{ width: `${d.rate}%` }} />
-                </div>
+      <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
+        <h3 className="mb-4 font-bold text-ink">Facilities by District</h3>
+        <div className="flex flex-col gap-3">
+          {loading && <p className="text-sm text-body">Loading…</p>}
+          {!loading && districtGroups.length === 0 && <p className="text-sm text-body">No facilities registered yet.</p>}
+          {districtGroups.map(([district, count]) => (
+            <div key={district}>
+              <div className="flex justify-between text-sm font-semibold text-body"><span>{district}</span><span>{count} facilit{count === 1 ? 'y' : 'ies'}</span></div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-row-alt">
+                <div className="h-full bg-navy" style={{ width: `${Math.min(100, count * 25)}%` }} />
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-lg border border-navy-light/30 bg-navy-light/5 p-5">
-          <h3 className="mb-3 flex items-center gap-2 font-bold text-navy"><Sparkles size={15} />AI Insights</h3>
-          <div className="flex flex-col gap-3 text-sm">
-            <p><span className="font-semibold text-danger">Critical:</span> adherence in Gasabo District dropped 8% -- recommend increasing CHW density in Kigarama sector.</p>
-            <p><span className="font-semibold text-success-text">Positive trend:</span> Nyarugenge sustained 90%+ adherence for the third consecutive month.</p>
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

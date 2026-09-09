@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { ShieldCheck, X, FileCheck } from 'lucide-react';
+import { createMinistryReport, getMinistryReports, decideOnReport } from '../../services/supabaseMinistryService';
 
 // Matches "National Performance Review Export" + "Digital Signature
-// Modal". FRONTEND ONLY -- a real e-signature/legal sign-off workflow is
-// a genuinely sensitive thing to wire for real (audit integrity, legal
-// non-repudiation), not something to fake with a button that silently
-// "signs" nothing real. Backend phase, flagged not decided silently.
+// Modal". Generate & Export now writes a real ministry_reports row, and
+// Sign & Approve writes a real report_approvals row (migrations
+// 0018-0019) -- both were honestly disabled before since no backend
+// existed. The signature itself is still a recorded note/audit trail,
+// not cryptographic non-repudiation (a real PKI e-signature system is a
+// bigger, still-deferred decision, same as flagged in the original
+// handoff doc) -- so "256-bit encrypted" below is dropped as an
+// unverifiable claim rather than kept as decoration.
 const reportTypes = [
   { key: 'clinical', label: 'Adherence & Clinical Outcomes', desc: 'National adherence metrics and key clinical indicators.' },
   { key: 'supply', label: 'Supply Chain & Logistics', desc: 'Stockouts, delivery times, and resource utilization.' },
@@ -16,11 +21,34 @@ const reportTypes = [
 export default function MinistryPerformanceExport() {
   const [selected, setSelected] = useState('clinical');
   const [signModalOpen, setSignModalOpen] = useState(false);
+  const [certifyChecked, setCertifyChecked] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [signed, setSigned] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  async function openSignModal() {
+    setGenerating(true);
+    const label = reportTypes.find((r) => r.key === selected)?.label ?? 'Performance Review';
+    await createMinistryReport({ title: `${label} Export` });
+    const reports = await getMinistryReports('pending_review');
+    setReportId(reports[0]?.id ?? null);
+    setGenerating(false);
+    setSignModalOpen(true);
+  }
+
+  async function signAndApprove() {
+    if (!reportId) return;
+    await decideOnReport(reportId, 'approved', 'Signed via National Performance Review Export');
+    setSigned(true);
+    setSignModalOpen(false);
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold text-ink">National Performance Review Export</h1>
       <p className="-mt-4 text-body">Generate and customize comprehensive health system reports for national oversight.</p>
+
+      {signed && <p className="rounded-lg border border-success/30 bg-success-bg/40 px-4 py-2 text-sm font-semibold text-success-text">Report signed and approved — sent to Report Approval history.</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <div className="flex flex-col gap-4">
@@ -39,11 +67,6 @@ export default function MinistryPerformanceExport() {
               ))}
             </div>
           </div>
-          <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-            <h3 className="mb-3 font-bold text-ink">Advanced Customization</h3>
-            <label className="mb-2 flex items-center gap-2 text-sm text-ink"><input type="checkbox" defaultChecked />Include AI Forecast Accuracy</label>
-            <label className="flex items-center gap-2 text-sm text-ink"><input type="checkbox" defaultChecked />CHW Workload Metrics</label>
-          </div>
         </div>
 
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
@@ -52,9 +75,9 @@ export default function MinistryPerformanceExport() {
             <label className="flex items-center gap-2 rounded border border-navy bg-[#d7e2ff]/30 p-2 text-sm"><input type="radio" name="fmt" defaultChecked />PDF Document</label>
             <label className="flex items-center gap-2 rounded border border-border p-2 text-sm"><input type="radio" name="fmt" />XLSX Spreadsheet</label>
           </div>
-          <button onClick={() => setSignModalOpen(true)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-2.5 text-sm font-semibold text-white">
+          <button onClick={openSignModal} disabled={generating} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-2.5 text-sm font-semibold text-white disabled:opacity-60">
             <FileCheck size={15} />
-            Generate &amp; Export Report
+            {generating ? 'Generating…' : 'Generate & Export Report'}
           </button>
         </div>
       </div>
@@ -68,17 +91,17 @@ export default function MinistryPerformanceExport() {
             </div>
             <p className="mt-1 text-xs text-body">Ministry of Health -- Report Approval Workflow</p>
             <div className="mt-4 rounded bg-bg p-3 text-xs text-body">
-              <p><span className="font-semibold text-ink">Document:</span> National Performance Review Export</p>
+              <p><span className="font-semibold text-ink">Document:</span> {reportTypes.find((r) => r.key === selected)?.label} Export</p>
               <p><span className="font-semibold text-ink">Date:</span> {new Date().toLocaleDateString()}</p>
             </div>
             <label className="mt-4 flex items-center gap-2 text-xs text-body">
-              <input type="checkbox" />
+              <input type="checkbox" checked={certifyChecked} onChange={(e) => setCertifyChecked(e.target.checked)} />
               I hereby certify that I have reviewed the contents of this report and authorize its publication as the system of record.
             </label>
-            <div className="mt-4 flex items-center gap-2 text-xs text-success-text"><ShieldCheck size={13} />256-bit encrypted</div>
+            <p className="mt-3 flex items-center gap-1.5 text-[11px] text-body"><ShieldCheck size={12} /> Recorded as an audit-trail signature note, not a cryptographic e-signature.</p>
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={() => setSignModalOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-body">Cancel</button>
-              <button disabled title="Real e-signature backend not built yet" className="cursor-not-allowed rounded-lg bg-navy/40 px-4 py-2 text-sm font-semibold text-white/70">Sign &amp; Approve</button>
+              <button onClick={signAndApprove} disabled={!certifyChecked} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Sign &amp; Approve</button>
             </div>
           </div>
         </div>

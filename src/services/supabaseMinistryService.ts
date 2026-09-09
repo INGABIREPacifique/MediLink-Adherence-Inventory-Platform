@@ -89,7 +89,77 @@ export async function createReportTemplate(input: { name: string; description?: 
   if (error) throw error;
 }
 
-// ---------- Ministry Reports + Approvals ----------
+export interface ClinicalFollowUpStats {
+  adherenceRatePct: number;
+  activePatients: number;
+  missedDosesLast24h: number;
+  pendingEscalations: number;
+}
+
+export async function getClinicalFollowUpStats(): Promise<ClinicalFollowUpStats> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [{ data: doses }, { data: patients }, { data: missed }, { data: escalations }] = await Promise.all([
+    supabase.from('dose_reminders').select('confirmed').lte('scheduled_for', new Date().toISOString()),
+    supabase.from('patients').select('id'),
+    supabase.from('dose_reminders').select('id').eq('confirmed', false).gte('scheduled_for', since).lte('scheduled_for', new Date().toISOString()),
+    supabase.from('escalations').select('id').eq('status', 'pending'),
+  ]);
+  const doseRows = doses ?? [];
+  return {
+    adherenceRatePct: doseRows.length ? Math.round((doseRows.filter((d) => d.confirmed).length / doseRows.length) * 100) : 0,
+    activePatients: (patients ?? []).length,
+    missedDosesLast24h: (missed ?? []).length,
+    pendingEscalations: (escalations ?? []).length,
+  };
+}
+
+// ---------- Sector/Clinical detail aggregations ----------
+// Same honesty constraint as the dashboard: no sector-specific split is
+// possible without patient-facility linkage, so this is real pilot-wide
+// data (trend, totals, CHW leaderboard), not fabricated per-sector splits.
+
+export interface SectorDetailStats {
+  adherenceTrend: number[]; // % per day, oldest to newest, last 7 days
+  totalPatients: number;
+  chwLeaderboard: { name: string; visitCount: number }[];
+}
+
+export async function getSectorDetailStats(): Promise<SectorDetailStats> {
+  const [{ data: patients }, { data: visits }] = await Promise.all([
+    supabase.from('patients').select('id'),
+    supabase.from('chw_visits').select('logged_by, visited_at, profiles:logged_by ( full_name )'),
+  ]);
+
+  const days: number[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = new Date();
+    dayStart.setDate(dayStart.getDate() - i);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const { data: doses } = await supabase
+      .from('dose_reminders')
+      .select('confirmed')
+      .gte('scheduled_for', dayStart.toISOString())
+      .lt('scheduled_for', dayEnd.toISOString());
+    const rows = doses ?? [];
+    days.push(rows.length ? Math.round((rows.filter((d) => d.confirmed).length / rows.length) * 100) : 0);
+  }
+
+  const visitCounts = new Map<string, { name: string; visitCount: number }>();
+  ((visits ?? []) as unknown as { logged_by: string | null; profiles: { full_name: string } | null }[]).forEach((v) => {
+    if (!v.logged_by) return;
+    const name = v.profiles?.full_name ?? 'Unknown CHW';
+    const existing = visitCounts.get(v.logged_by);
+    visitCounts.set(v.logged_by, { name, visitCount: (existing?.visitCount ?? 0) + 1 });
+  });
+
+  return {
+    adherenceTrend: days,
+    totalPatients: (patients ?? []).length,
+    chwLeaderboard: Array.from(visitCounts.values()).sort((a, b) => b.visitCount - a.visitCount).slice(0, 5),
+  };
+}
 
 export interface MinistryReportRow {
   id: string;
