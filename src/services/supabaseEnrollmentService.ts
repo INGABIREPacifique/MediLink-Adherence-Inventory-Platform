@@ -19,9 +19,15 @@ import type { EnrollmentService } from './enrollmentService';
 // extending dose_reminders forward (this only pre-generates 30 days at
 // enrollment time) -- documented here rather than silently left out.
 export async function enrollPatient(draft: EnrollmentDraft, assignedChwId?: string | null): Promise<Patient> {
+  // This pilot has one facility (see migration 0024's backfill). Looked
+  // up by name rather than hardcoding a UUID, so this doesn't break if
+  // the demo seed changes; null is fine (matches pre-migration patients)
+  // if no facility row exists yet.
+  const { data: facility } = await supabase.from('facilities').select('id').eq('name', 'Kigali Central Hospital').maybeSingle();
+
   const { data: patient, error: patientError } = await supabase
     .from('patients')
-    .insert({ name: draft.patientName, phone: draft.phone, assigned_chw_id: assignedChwId ?? null, known_allergies: draft.allergies })
+    .insert({ name: draft.patientName, phone: draft.phone, assigned_chw_id: assignedChwId ?? null, known_allergies: draft.allergies, facility_id: facility?.id ?? null })
     .select('id, name, phone')
     .single();
   if (patientError || !patient) throw patientError ?? new Error('Failed to create patient');

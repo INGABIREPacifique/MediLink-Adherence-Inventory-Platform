@@ -1,44 +1,48 @@
 import { useEffect, useState } from 'react';
 import { Users, Target, Sparkles } from 'lucide-react';
 import { getClinicalFollowUpStats, type ClinicalFollowUpStats } from '../../services/supabaseMinistryService';
-import { getFacilities, type Facility } from '../../services/supabaseMinistryService';
+import { getFacilityAdherence, type FacilityAdherence } from '../../services/supabaseMinistryService';
 
 // Matches "National Health Authority - Adherence Performance Map".
 // Choropleth map replaced with a ranked district list -- same reasoning
 // as every other map screen: no real geolocation data exists in this
-// pilot's schema. Real pilot-wide stats as of migrations 0018-0019;
-// district breakdown shows real facility counts, not fabricated
-// per-district adherence rates (same constraint as Sector Reports). The
-// "AI Insights" panel is dropped rather than filled with different
-// invented numbers -- this project's actual AI usage is scoped
-// specifically to escalation-priority ranking (see the founding
-// proposal), not national-level insight generation, which was never
-// built and shouldn't be faked here.
+// pilot's schema. Real per-district adherence as of migration 0024
+// (patients.facility_id linkage) -- earlier versions of this screen
+// could only show facility counts. The "AI Insights" panel from the
+// original mock is still dropped rather than filled with invented text
+// -- this project's real AI usage is scoped specifically to
+// escalation-priority ranking, not district-level insight generation.
 export default function MinistryAdherenceMap() {
   const [stats, setStats] = useState<ClinicalFollowUpStats | null>(null);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [facilityStats, setFacilityStats] = useState<FacilityAdherence[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getClinicalFollowUpStats(), getFacilities()]).then(([s, f]) => {
+    Promise.all([getClinicalFollowUpStats(), getFacilityAdherence()]).then(([s, f]) => {
       setStats(s);
-      setFacilities(f);
+      setFacilityStats(f);
       setLoading(false);
     });
   }, []);
 
   const districtGroups = Object.entries(
-    facilities.reduce<Record<string, number>>((acc, f) => {
-      const key = f.district ?? 'Unassigned';
-      acc[key] = (acc[key] ?? 0) + 1;
+    facilityStats.reduce<Record<string, FacilityAdherence[]>>((acc, f) => {
+      const key = f.facility.district ?? 'Unassigned';
+      (acc[key] ??= []).push(f);
       return acc;
     }, {})
-  );
+  ).map(([district, facs]) => {
+    const totalPatients = facs.reduce((sum, f) => sum + f.patientCount, 0);
+    const weightedAdherence = totalPatients
+      ? Math.round(facs.reduce((sum, f) => sum + f.adherenceRatePct * f.patientCount, 0) / totalPatients)
+      : 0;
+    return { district, totalPatients, weightedAdherence };
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold text-ink">Adherence Performance Overview</h1>
-      <p className="-mt-4 text-body">Pilot-wide adherence and facility distribution.</p>
+      <p className="-mt-4 text-body">Real adherence by district.</p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
@@ -56,15 +60,15 @@ export default function MinistryAdherenceMap() {
       </div>
 
       <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-        <h3 className="mb-4 font-bold text-ink">Facilities by District</h3>
+        <h3 className="mb-4 font-bold text-ink">Adherence by District</h3>
         <div className="flex flex-col gap-3">
           {loading && <p className="text-sm text-body">Loading…</p>}
           {!loading && districtGroups.length === 0 && <p className="text-sm text-body">No facilities registered yet.</p>}
-          {districtGroups.map(([district, count]) => (
+          {districtGroups.map(({ district, totalPatients, weightedAdherence }) => (
             <div key={district}>
-              <div className="flex justify-between text-sm font-semibold text-body"><span>{district}</span><span>{count} facilit{count === 1 ? 'y' : 'ies'}</span></div>
+              <div className="flex justify-between text-sm font-semibold text-body"><span>{district}</span><span>{totalPatients > 0 ? `${weightedAdherence}%` : 'No patients'}</span></div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-row-alt">
-                <div className="h-full bg-navy" style={{ width: `${Math.min(100, count * 25)}%` }} />
+                <div className={`h-full ${weightedAdherence >= 90 ? 'bg-success' : weightedAdherence >= 70 ? 'bg-warning-text' : 'bg-danger'}`} style={{ width: `${weightedAdherence}%` }} />
               </div>
             </div>
           ))}

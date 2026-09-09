@@ -43,6 +43,44 @@ export async function getMinistryDashboardSummary(): Promise<MinistryDashboardSu
   };
 }
 
+// ---------- Per-facility adherence ----------
+// Possible as of migration 0024 (patients.facility_id) -- before this,
+// Sector Reports/Adherence Map could only show facility counts, not real
+// per-facility adherence, and said so honestly. Now genuinely computed.
+
+export interface FacilityAdherence {
+  facility: Facility;
+  adherenceRatePct: number;
+  patientCount: number;
+}
+
+export async function getFacilityAdherence(): Promise<FacilityAdherence[]> {
+  const facilities = await getFacilities();
+  return Promise.all(
+    facilities.map(async (facility) => {
+      const { data: patientRows } = await supabase.from('patients').select('id').eq('facility_id', facility.id);
+      const patientIds = (patientRows ?? []).map((p) => p.id);
+      if (patientIds.length === 0) return { facility, adherenceRatePct: 0, patientCount: 0 };
+
+      const { data: prescriptionRows } = await supabase.from('prescriptions').select('id').in('patient_id', patientIds);
+      const prescriptionIds = (prescriptionRows ?? []).map((p) => p.id);
+      if (prescriptionIds.length === 0) return { facility, adherenceRatePct: 0, patientCount: patientIds.length };
+
+      const { data: doses } = await supabase
+        .from('dose_reminders')
+        .select('confirmed')
+        .in('prescription_id', prescriptionIds)
+        .lte('scheduled_for', new Date().toISOString());
+      const rows = doses ?? [];
+      return {
+        facility,
+        adherenceRatePct: rows.length ? Math.round((rows.filter((d) => d.confirmed).length / rows.length) * 100) : 0,
+        patientCount: patientIds.length,
+      };
+    })
+  );
+}
+
 // ---------- Facilities ----------
 
 export interface Facility {

@@ -1,48 +1,44 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText, FileSpreadsheet, Send } from 'lucide-react';
-import { getFacilities, type Facility } from '../../services/supabaseMinistryService';
-import { getMinistryDashboardSummary, type MinistryDashboardSummary } from '../../services/supabaseMinistryService';
+import { getFacilityAdherence, type FacilityAdherence } from '../../services/supabaseMinistryService';
 
 // Matches Figma "Sector Performance Reports" content. The Figma design's
 // District Heatmap (an actual geo map) is replaced with a ranked list --
 // same reasoning as other map-dependent screens: no facility/sector
 // geolocation data exists in this pilot's schema.
 //
-// Real data as of migration 0019, but honestly scoped: the original mock
-// showed a distinct adherence rate/trend/CHW-completion number PER
-// sector. That can't be computed for real yet -- patients and inventory
-// aren't linked to a facility_id, so there's no way to split adherence by
-// sector. Rather than replace one set of fabricated numbers with
-// another, this shows real facility counts per sector plus the one real
-// number that does exist (pilot-wide adherence), labeled honestly as
-// pilot-wide rather than implied as sector-specific.
+// Real per-facility adherence as of migration 0024 (patients.facility_id
+// linkage) -- earlier versions of this screen could only show facility
+// counts and honestly said per-sector adherence wasn't computable yet.
+// That's no longer true: this now grouped-sums real adherence by sector.
 export default function MinistrySectorReports() {
-  const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [summary, setSummary] = useState<MinistryDashboardSummary | null>(null);
+  const [facilityStats, setFacilityStats] = useState<FacilityAdherence[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getFacilities(), getMinistryDashboardSummary()]).then(([f, s]) => {
-      setFacilities(f);
-      setSummary(s);
-      setLoading(false);
-    });
+    getFacilityAdherence().then(setFacilityStats).finally(() => setLoading(false));
   }, []);
 
   const sectorGroups = Object.entries(
-    facilities.reduce<Record<string, Facility[]>>((acc, f) => {
-      const key = f.sector ?? 'Unassigned';
+    facilityStats.reduce<Record<string, FacilityAdherence[]>>((acc, f) => {
+      const key = f.facility.sector ?? 'Unassigned';
       (acc[key] ??= []).push(f);
       return acc;
     }, {})
-  );
+  ).map(([sector, facs]) => {
+    const totalPatients = facs.reduce((sum, f) => sum + f.patientCount, 0);
+    const weightedAdherence = totalPatients
+      ? Math.round(facs.reduce((sum, f) => sum + f.adherenceRatePct * f.patientCount, 0) / totalPatients)
+      : 0;
+    return { sector, facs, totalPatients, weightedAdherence };
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold text-ink">Sector Performance Reports</h1>
-          <p className="text-body">Facility distribution by sector.</p>
+          <p className="text-body">Real adherence by sector, weighted by patient count.</p>
         </div>
         <button className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm">
           <Download size={15} />
@@ -50,37 +46,30 @@ export default function MinistrySectorReports() {
         </button>
       </div>
 
-      {!loading && summary && (
-        <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase text-body">Pilot-Wide Adherence</p>
-          <p className="text-2xl font-bold text-ink">{summary.adherenceRatePct}%</p>
-          <p className="text-xs text-body">Sector-level breakdown needs patients linked to a facility, which this pilot's schema doesn't do yet.</p>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading && <p className="text-sm text-body">Loading…</p>}
         {!loading && sectorGroups.length === 0 && <p className="text-sm text-body">No facilities registered yet.</p>}
-        {sectorGroups.map(([sector, facs]) => (
-          <div key={sector} className="rounded-lg border border-border bg-white p-4 shadow-sm">
+        {sectorGroups.map(({ sector, facs, totalPatients, weightedAdherence }) => (
+          <div key={sector} className={`rounded-lg border p-4 shadow-sm ${weightedAdherence < 70 && totalPatients > 0 ? 'border-danger' : 'border-border bg-white'}`}>
             <p className="font-bold text-ink">{sector}</p>
-            <p className="mt-2 text-xs font-semibold uppercase text-body">Facilities</p>
-            <p className="text-2xl font-bold text-ink">{facs.length}</p>
-            <ul className="mt-2 flex flex-col gap-1 text-xs text-body">
-              {facs.map((f) => <li key={f.id}>{f.name}</li>)}
-            </ul>
+            <p className="mt-2 text-xs font-semibold uppercase text-body">Adherence Rate</p>
+            <p className={`text-2xl font-bold ${weightedAdherence >= 90 ? 'text-success-text' : weightedAdherence >= 70 ? 'text-ink' : 'text-danger'}`}>{totalPatients > 0 ? `${weightedAdherence}%` : '—'}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div><p className="text-body">Patients</p><p className="font-semibold text-ink">{totalPatients}</p></div>
+              <div><p className="text-body">Facilities</p><p className="font-semibold text-ink">{facs.length}</p></div>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
-          <h3 className="font-bold text-ink">Facilities per Sector</h3>
-          <p className="mb-4 text-xs text-body">Real registration counts, not adherence-weighted</p>
+          <h3 className="font-bold text-ink">Adherence by Sector</h3>
+          <p className="mb-4 text-xs text-body">Real, patient-weighted</p>
           <div className="flex h-40 items-end gap-3">
-            {sectorGroups.map(([sector, facs]) => (
+            {sectorGroups.map(({ sector, weightedAdherence }) => (
               <div key={sector} className="flex flex-1 flex-col items-center gap-1">
-                <div className="w-full rounded-t bg-navy" style={{ height: `${Math.min(100, facs.length * 25)}%` }} />
+                <div className={`w-full rounded-t ${weightedAdherence >= 90 ? 'bg-success' : weightedAdherence >= 70 ? 'bg-warning-text' : 'bg-danger'}`} style={{ height: `${weightedAdherence}%` }} />
                 <span className="text-[10px] text-body">{sector}</span>
               </div>
             ))}
