@@ -1,10 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getPatientHistory, updatePatientContactPreferences } from '../../services/supabasePatientHistoryService';
 
-// FRONTEND ONLY -- form state is local only, does not persist anywhere yet.
+// Real data: phone loads from and saves to patients.phone; channel/
+// language save to every active prescription for this patient (see
+// updatePatientContactPreferences for why -- the schema stores these
+// per-medication, not as a single patient-level field).
+const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
+
 export default function PatientSettings() {
   const [channel, setChannel] = useState('ussd');
   const [language, setLanguage] = useState('rw');
-  const [phone, setPhone] = useState('+250 788 123 456');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getPatientHistory(DEMO_PATIENT_ID).then((history) => {
+      setPhone(history.patient.phone);
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    await updatePatientContactPreferences(DEMO_PATIENT_ID, {
+      phone,
+      preferredChannel: channel as 'ussd' | 'ivr' | 'sms',
+      language: language as 'rw' | 'en' | 'fr',
+    });
+    setSaving(false);
+    setSaved(true);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -13,10 +41,10 @@ export default function PatientSettings() {
         <p className="text-body">How MediLink reaches you.</p>
       </div>
 
-      <form className="flex max-w-md flex-col gap-4 rounded-lg border border-border bg-white p-6 shadow-sm">
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex max-w-md flex-col gap-4 rounded-lg border border-border bg-white p-6 shadow-sm">
         <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
           Phone Number
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded border border-border bg-bg px-3 py-2.5 text-base font-normal text-ink" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading} className="rounded border border-border bg-bg px-3 py-2.5 text-base font-normal text-ink disabled:opacity-50" />
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
           Preferred Reminder Channel
@@ -34,9 +62,10 @@ export default function PatientSettings() {
             <option value="fr">Français</option>
           </select>
         </label>
-        <button type="button" className="mt-2 w-fit rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white shadow-sm">
-          Save Preferences
+        <button type="submit" disabled={saving || loading} className="mt-2 w-fit rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+          {saving ? 'Saving…' : 'Save Preferences'}
         </button>
+        {saved && <p className="text-sm font-semibold text-success-text">Saved — applies to all your active medications.</p>}
       </form>
     </div>
   );

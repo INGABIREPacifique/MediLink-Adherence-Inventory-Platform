@@ -147,6 +147,28 @@ export async function getAllPatients(): Promise<PatientSummary[]> {
   return withStats;
 }
 
+// Persists Patient Portal Settings changes. Phone lives on patients;
+// preferred channel/language live on prescriptions (set per-medication
+// at enrollment -- see EnrollmentDraft), not as a single patient-level
+// field, so "save preferences" honestly means updating every active
+// prescription for this patient, not a field that doesn't exist.
+export async function updatePatientContactPreferences(
+  patientId: string,
+  input: { phone?: string; preferredChannel?: 'ussd' | 'ivr' | 'sms'; language?: 'rw' | 'en' | 'fr' }
+): Promise<void> {
+  if (input.phone) {
+    const { error } = await supabase.from('patients').update({ phone: input.phone }).eq('id', patientId);
+    if (error) throw error;
+  }
+  if (input.preferredChannel || input.language) {
+    const update: Record<string, string> = {};
+    if (input.preferredChannel) update.preferred_channel = input.preferredChannel;
+    if (input.language) update.language = input.language;
+    const { error } = await supabase.from('prescriptions').update(update).eq('patient_id', patientId);
+    if (error) throw error;
+  }
+}
+
 // Persists allergy edits made on the nurse-facing Medical Record page.
 // Real write as of migration 0015 -- previously this data only ever lived
 // in local component state and was lost on refresh.
