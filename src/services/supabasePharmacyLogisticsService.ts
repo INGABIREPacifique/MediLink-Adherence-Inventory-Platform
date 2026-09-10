@@ -159,6 +159,7 @@ export interface ReplenishmentRequestRow {
   note: string | null;
   status: string;
   submittedAt: string;
+  reviewedAt: string | null;
   items: { itemName: string; quantity: number; unit: string | null }[];
 }
 
@@ -191,10 +192,31 @@ export async function createReplenishmentRequest(input: {
   if (itemsError) throw itemsError;
 }
 
+export async function getReplenishmentRequestById(id: string): Promise<ReplenishmentRequestRow | null> {
+  const { data: request, error } = await supabase
+    .from('replenishment_requests')
+    .select('id, reference, urgency, note, status, submitted_at, reviewed_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!request) return null;
+  const { data: items } = await supabase.from('replenishment_request_items').select('item_name, quantity, unit').eq('request_id', id);
+  return {
+    id: request.id,
+    reference: request.reference,
+    urgency: request.urgency,
+    note: request.note,
+    status: request.status,
+    submittedAt: request.submitted_at,
+    reviewedAt: request.reviewed_at,
+    items: (items ?? []).map((i) => ({ itemName: i.item_name, quantity: i.quantity, unit: i.unit })),
+  };
+}
+
 export async function getReplenishmentRequests(): Promise<ReplenishmentRequestRow[]> {
   const { data: requests, error } = await supabase
     .from('replenishment_requests')
-    .select('id, reference, urgency, note, status, submitted_at')
+    .select('id, reference, urgency, note, status, submitted_at, reviewed_at')
     .order('submitted_at', { ascending: false })
     .limit(30);
   if (error) throw error;
@@ -212,6 +234,7 @@ export async function getReplenishmentRequests(): Promise<ReplenishmentRequestRo
         note: r.note,
         status: r.status,
         submittedAt: r.submitted_at,
+        reviewedAt: r.reviewed_at,
         items: (items ?? []).map((i) => ({ itemName: i.item_name, quantity: i.quantity, unit: i.unit })),
       };
     })

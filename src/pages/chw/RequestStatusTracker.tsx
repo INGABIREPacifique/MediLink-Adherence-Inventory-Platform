@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Package, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { getReplenishmentRequests, type ReplenishmentRequestRow } from '../../services/supabasePharmacyLogisticsService';
 
@@ -43,7 +44,7 @@ export default function RequestStatusTracker() {
           const config = statusConfig[r.status] ?? statusConfig.pending_approval;
           const Icon = config.icon;
           return (
-            <div key={r.id} className="flex items-center justify-between rounded-lg border border-border bg-white p-5 shadow-sm">
+            <Link to={`/chw/request/${r.id}`} key={r.id} className="flex items-center justify-between rounded-lg border border-border bg-white p-5 shadow-sm transition hover:border-navy/30">
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy"><Package size={17} /></span>
                 <div>
@@ -57,7 +58,7 @@ export default function RequestStatusTracker() {
                 </span>
                 <span className="text-xs text-body">Updated {timeAgo(r.submittedAt)}</span>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
