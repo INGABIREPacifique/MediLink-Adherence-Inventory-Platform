@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Package, CheckCircle2, ArrowLeft, Minus, Plus } from 'lucide-react';
 import { createReplenishmentRequest } from '../services/supabasePharmacyLogisticsService';
 
@@ -24,6 +25,7 @@ export default function ReplenishmentRequest() {
   const [urgency, setUrgency] = useState<'routine' | 'urgent'>('routine');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submittedReference, setSubmittedReference] = useState('');
 
   const selectedItems = CATALOGUE.filter((item) => (quantities[item.name] ?? 0) > 0);
 
@@ -33,11 +35,12 @@ export default function ReplenishmentRequest() {
 
   async function submit() {
     setSubmitting(true);
-    await createReplenishmentRequest({
+    const { reference } = await createReplenishmentRequest({
       items: selectedItems.map((item) => ({ itemName: item.name, quantity: quantities[item.name], unit: item.unit })),
       urgency,
       note: note || undefined,
     });
+    setSubmittedReference(reference);
     setSubmitting(false);
     setStep('success');
   }
@@ -48,11 +51,21 @@ export default function ReplenishmentRequest() {
         <span className="flex size-16 items-center justify-center rounded-full bg-success-bg text-success"><CheckCircle2 size={32} /></span>
         <p className="text-2xl font-bold text-ink">Request Submitted</p>
         <p className="text-sm text-body">
-          {selectedItems.length} item(s) requested{urgency === 'urgent' ? ', flagged urgent' : ''}. Pharmacy staff will review it in Replenishment Approval.
+          Your request {submittedReference} has been sent to Kigali Central Medical Stores for approval.
         </p>
-        <button onClick={() => { setStep('select'); setQuantities({}); setNote(''); setUrgency('routine'); }} className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white">
-          New Request
-        </button>
+        <div className="w-full rounded-lg border border-border bg-bg p-4 text-left">
+          <p className="mb-2 text-xs font-semibold uppercase text-body">Request Summary</p>
+          {selectedItems.map((item) => (
+            <div key={item.name} className="flex items-center justify-between py-1 text-sm">
+              <span className="text-ink">{item.name}</span>
+              <span className="text-body">Qty {quantities[item.name]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex w-full gap-2">
+          <Link to="/chw/request-status" className="flex-1 rounded-lg bg-navy px-5 py-2.5 text-center text-sm font-semibold text-white">View Request Status</Link>
+          <button onClick={() => { setStep('select'); setQuantities({}); setNote(''); setUrgency('routine'); }} className="flex-1 rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-body">Back to Inventory</button>
+        </div>
       </div>
     );
   }

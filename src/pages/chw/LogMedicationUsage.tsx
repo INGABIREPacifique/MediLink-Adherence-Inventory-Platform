@@ -62,7 +62,10 @@ export default function LogMedicationUsage() {
         <span className="flex size-16 items-center justify-center rounded-full bg-success-bg text-success"><CheckCircle2 size={32} /></span>
         <p className="text-2xl font-bold text-ink">Usage Recorded</p>
         <p className="text-sm text-body">
-          {quantity} unit(s) of {medication} logged for {patientName}{doseObserved ? ' — dose observed directly.' : '.'}
+          Usage successfully recorded for {patientName}.
+        </p>
+        <p className="text-sm text-body">
+          {quantity} unit(s) of {medication}{doseObserved ? ' — dose observed directly.' : '.'}
         </p>
         <div className="flex gap-3">
           <button onClick={reset} className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white">Log Another</button>
@@ -111,7 +114,7 @@ export default function LogMedicationUsage() {
           <input type="checkbox" checked={doseObserved} onChange={(e) => setDoseObserved(e.target.checked)} />
         </label>
         <button type="submit" disabled={submitting} className="flex items-center justify-center gap-2 rounded-lg bg-navy px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
-          <ClipboardList size={16} /> {submitting ? 'Logging…' : 'Log Usage'}
+          <ClipboardList size={16} /> {submitting ? 'Recording…' : 'Confirm Usage'}
         </button>
       </form>
     </div>

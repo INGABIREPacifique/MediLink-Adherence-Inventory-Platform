@@ -169,7 +169,7 @@ export async function createReplenishmentRequest(input: {
   note?: string;
   requestedBy?: string | null;
   facilityName?: string | null;
-}): Promise<void> {
+}): Promise<{ reference: string }> {
   const { data: request, error: requestError } = await supabase
     .from('replenishment_requests')
     .insert({
@@ -178,7 +178,7 @@ export async function createReplenishmentRequest(input: {
       requested_by: input.requestedBy ?? null,
       facility_name: input.facilityName ?? null,
     })
-    .select('id')
+    .select('id, reference')
     .single();
   if (requestError || !request) throw requestError ?? new Error('Failed to create replenishment request');
 
@@ -190,6 +190,7 @@ export async function createReplenishmentRequest(input: {
   }));
   const { error: itemsError } = await supabase.from('replenishment_request_items').insert(itemRows);
   if (itemsError) throw itemsError;
+  return { reference: request.reference };
 }
 
 export async function getReplenishmentRequestById(id: string): Promise<ReplenishmentRequestRow | null> {
