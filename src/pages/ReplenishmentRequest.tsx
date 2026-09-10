@@ -10,12 +10,19 @@ import { createReplenishmentRequest } from '../services/supabasePharmacyLogistic
 // Real write as of migration 0017 (replenishment_requests +
 // replenishment_request_items).
 const CATALOGUE = [
-  { name: 'Amoxicillin 500mg', unit: 'boxes' },
-  { name: 'Paracetamol 500mg', unit: 'boxes' },
-  { name: 'Insulin (vials)', unit: 'vials' },
-  { name: 'Oral Rehydration Salts', unit: 'sachets' },
-  { name: 'Artemether/Lumefantrine', unit: 'boxes' },
+  { name: 'Amoxicillin 250mg Capsules', unit: 'boxes', category: 'Medications', badge: 'Essential' as const },
+  { name: 'Paracetamol 500mg', unit: 'boxes', category: 'Medications', badge: 'Out of Stock at Depot' as const },
+  { name: 'Insulin (Regular)', unit: 'vials', category: 'Medications', badge: 'Cold Chain' as const },
+  { name: 'Oral Rehydration Salts (ORS)', unit: 'sachets', category: 'Medications', badge: 'Essential' as const },
+  { name: 'Malaria RDT Kits', unit: 'kits', category: 'Diagnostics', badge: 'Low Stock' as const },
 ];
+
+const badgeStyles: Record<string, string> = {
+  Essential: 'bg-[#d7e2ff] text-navy',
+  'Low Stock': 'bg-warning-bg text-warning-text',
+  'Cold Chain': 'bg-navy text-white',
+  'Out of Stock at Depot': 'bg-danger-bg text-danger-text',
+};
 
 type Step = 'select' | 'review' | 'success';
 
@@ -23,9 +30,16 @@ export default function ReplenishmentRequest() {
   const [step, setStep] = useState<Step>('select');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [urgency, setUrgency] = useState<'routine' | 'urgent'>('routine');
+  const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submittedReference, setSubmittedReference] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'All Items' | 'Medications' | 'Diagnostics'>('All Items');
+
+  const visibleCatalogue = CATALOGUE.filter(
+    (item) => (activeTab === 'All Items' || item.category === activeTab) && item.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const selectedItems = CATALOGUE.filter((item) => (quantities[item.name] ?? 0) > 0);
 
@@ -35,10 +49,17 @@ export default function ReplenishmentRequest() {
 
   async function submit() {
     setSubmitting(true);
+    const reasonLabels: Record<string, string> = {
+      low_stock: 'Running Low on Stock',
+      stockout: 'Stockout — Immediate Need',
+      upcoming_demand: 'Anticipated Increase in Demand',
+      other: 'Other',
+    };
+    const combinedNote = [reason ? `Reason: ${reasonLabels[reason]}` : null, note || null].filter(Boolean).join(' — ');
     const { reference } = await createReplenishmentRequest({
       items: selectedItems.map((item) => ({ itemName: item.name, quantity: quantities[item.name], unit: item.unit })),
       urgency,
-      note: note || undefined,
+      note: combinedNote || undefined,
     });
     setSubmittedReference(reference);
     setSubmitting(false);
@@ -79,12 +100,34 @@ export default function ReplenishmentRequest() {
 
       {step === 'select' && (
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search medications, kits, or supplies..."
+            className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink shadow-sm"
+          />
+          <div className="flex gap-2">
+            {(['All Items', 'Medications', 'Diagnostics'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeTab === tab ? 'bg-navy text-white' : 'border border-border bg-white text-body'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
           <div className="rounded-lg border border-border bg-white shadow-sm">
-            {CATALOGUE.map((item) => (
+            {visibleCatalogue.length === 0 && <p className="px-5 py-6 text-center text-sm text-body">No items match your search.</p>}
+            {visibleCatalogue.map((item) => (
               <div key={item.name} className="flex items-center justify-between border-b border-border px-5 py-4 last:border-0">
                 <div className="flex items-center gap-3">
                   <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy"><Package size={16} /></span>
-                  <span className="text-sm font-semibold text-ink">{item.name}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{item.name}</p>
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${badgeStyles[item.badge]}`}>{item.badge}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setQty(item.name, -1)} className="flex size-8 items-center justify-center rounded border border-border text-body"><Minus size={14} /></button>
@@ -100,7 +143,7 @@ export default function ReplenishmentRequest() {
             onClick={() => setStep('review')}
             className="ml-auto rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
           >
-            Continue to Review ({selectedItems.length})
+            Review Request ({selectedItems.length})
           </button>
         </div>
       )}
@@ -132,12 +175,22 @@ export default function ReplenishmentRequest() {
             </div>
           </div>
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
-            Note (optional)
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Reason for urgent request, delivery notes, etc." className="rounded border border-border bg-bg px-3 py-2 text-ink" />
+            Reason for Request
+            <select value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-lg border border-border bg-bg px-3 py-2.5 text-ink">
+              <option value="" disabled>Select a reason…</option>
+              <option value="low_stock">Running Low on Stock</option>
+              <option value="stockout">Stockout — Immediate Need</option>
+              <option value="upcoming_demand">Anticipated Increase in Demand</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-body">
+            Additional Notes (optional)
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Add any specific delivery instructions or context..." className="rounded border border-border bg-bg px-3 py-2 text-ink" />
           </label>
           <div className="flex gap-3">
             <button onClick={() => setStep('select')} className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-body"><ArrowLeft size={14} /> Back</button>
-            <button onClick={submit} disabled={submitting} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{submitting ? 'Submitting…' : 'Submit Request'}</button>
+            <button onClick={submit} disabled={submitting || !reason} className="flex-1 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{submitting ? 'Submitting…' : 'Submit Request'}</button>
           </div>
         </div>
       )}
