@@ -49,6 +49,20 @@ export default function Landing() {
           </span>
         </Link>
 
+        <Link to="/chw/tasks" className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-navy hover:shadow-md">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy">
+            <Stethoscope size={18} />
+          </span>
+          <div>
+            <p className="font-bold text-ink">CHW Field App</p>
+            <p className="mt-1 text-sm text-body">Community Health Worker mobile tools. Real data, no login flow built yet for CHWs specifically.</p>
+          </div>
+          <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-success-text">
+            <span className="rounded-full bg-success-bg px-2 py-0.5 text-xs">Demo Access</span>
+            No login required
+          </span>
+        </Link>
+
         <Link to="/patient" className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-navy hover:shadow-md">
           <span className="flex size-10 items-center justify-center rounded-lg bg-success-bg text-success-text">
             <User size={18} />

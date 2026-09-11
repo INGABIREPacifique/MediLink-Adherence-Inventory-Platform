@@ -10,9 +10,13 @@ export default function ChwTraining() {
   const { profile } = useAuth();
   const [completed, setCompleted] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const canPersist = Boolean(profile?.id);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
     getCompletedModules(profile.id).then((c) => {
       setCompleted(c);
       setLoading(false);
@@ -20,9 +24,9 @@ export default function ChwTraining() {
   }, [profile]);
 
   async function handleComplete(moduleKey: string) {
-    if (!profile) return;
-    await completeModule(profile.id, moduleKey);
     setCompleted((prev) => [...prev, moduleKey]);
+    if (!profile?.id) return; // Demo mode: progress shown for this session only, not persisted -- no real profile row to attribute it to.
+    await completeModule(profile.id, moduleKey);
   }
 
   if (loading) return <div className="text-body">Loading training progress…</div>;
@@ -34,6 +38,7 @@ export default function ChwTraining() {
       <div>
         <h1 className="text-3xl font-bold text-ink">CHW Training Portal</h1>
         <p className="text-body">Onboarding modules for using MediLink in the field.</p>
+        {!canPersist && <p className="mt-1 text-xs text-warning-text">Viewing without login — progress won't be saved this session.</p>}
       </div>
 
       <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
