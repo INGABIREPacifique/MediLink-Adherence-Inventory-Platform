@@ -160,6 +160,8 @@ export interface ReplenishmentRequestRow {
   status: string;
   submittedAt: string;
   reviewedAt: string | null;
+  dispatchedAt: string | null;
+  arrivedAt: string | null;
   items: { itemName: string; quantity: number; unit: string | null }[];
 }
 
@@ -196,7 +198,7 @@ export async function createReplenishmentRequest(input: {
 export async function getReplenishmentRequestById(id: string): Promise<ReplenishmentRequestRow | null> {
   const { data: request, error } = await supabase
     .from('replenishment_requests')
-    .select('id, reference, urgency, note, status, submitted_at, reviewed_at')
+    .select('id, reference, urgency, note, status, submitted_at, reviewed_at, dispatched_at, arrived_at')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -210,14 +212,26 @@ export async function getReplenishmentRequestById(id: string): Promise<Replenish
     status: request.status,
     submittedAt: request.submitted_at,
     reviewedAt: request.reviewed_at,
+    dispatchedAt: request.dispatched_at,
+    arrivedAt: request.arrived_at,
     items: (items ?? []).map((i) => ({ itemName: i.item_name, quantity: i.quantity, unit: i.unit })),
   };
+}
+
+export async function markRequestDispatched(id: string): Promise<void> {
+  const { error } = await supabase.from('replenishment_requests').update({ dispatched_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function markRequestArrived(id: string): Promise<void> {
+  const { error } = await supabase.from('replenishment_requests').update({ arrived_at: new Date().toISOString(), status: 'delivered' }).eq('id', id);
+  if (error) throw error;
 }
 
 export async function getReplenishmentRequests(): Promise<ReplenishmentRequestRow[]> {
   const { data: requests, error } = await supabase
     .from('replenishment_requests')
-    .select('id, reference, urgency, note, status, submitted_at, reviewed_at')
+    .select('id, reference, urgency, note, status, submitted_at, reviewed_at, dispatched_at, arrived_at')
     .order('submitted_at', { ascending: false })
     .limit(30);
   if (error) throw error;
@@ -236,6 +250,8 @@ export async function getReplenishmentRequests(): Promise<ReplenishmentRequestRo
         status: r.status,
         submittedAt: r.submitted_at,
         reviewedAt: r.reviewed_at,
+        dispatchedAt: r.dispatched_at,
+        arrivedAt: r.arrived_at,
         items: (items ?? []).map((i) => ({ itemName: i.item_name, quantity: i.quantity, unit: i.unit })),
       };
     })
