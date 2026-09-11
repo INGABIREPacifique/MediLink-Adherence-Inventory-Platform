@@ -108,7 +108,7 @@ interface SidebarProps {
 // permanent visible sidebar at lg+ (desktop/tablet), slide-out drawer with
 // backdrop below that (phone).
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const { signOut, profile, isDemo } = useAuth();
+  const { signOut, profile, isChwDemo } = useAuth();
   const role = profile?.role ?? 'nurse';
   const isChw = role === 'chw';
   const brand = brandByRole[role] ?? brandByRole.nurse;
@@ -181,11 +181,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           Help Center
         </NavLink>
         <button
-          onClick={() => (isDemo ? (window.location.href = '/') : signOut())}
+          onClick={() => (isChwDemo ? (window.location.href = '/') : signOut())}
           className="flex items-center gap-3 rounded px-3 py-2 text-sm text-body hover:bg-black/5"
         >
           <LogOut size={15} />
-          {isDemo ? 'Exit Demo' : 'Log Out'}
+          {isChwDemo ? 'Exit Demo' : 'Log Out'}
         </button>
       </div>
       </aside>
