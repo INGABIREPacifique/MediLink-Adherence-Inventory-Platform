@@ -2,30 +2,26 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ShieldAlert, Stethoscope, Pill, Plus, Trash2, Download } from 'lucide-react';
 import { getDischargeSummary, type DischargeSummaryData } from '../services/supabaseDischargeService';
-import { getPatientHistory, updatePatientAllergies } from '../services/supabasePatientHistoryService';
+import { getPatientHistory, updatePatientAllergies, getConditions, addCondition as addConditionApi, removeCondition as removeConditionApi } from '../services/supabasePatientHistoryService';
 
 // A single aggregated "Medical Record History" view for a nurse -- pulls
 // together the pieces that already exist as real Supabase data
 // (prescriptions/medications via getDischargeSummary, adherence context via
-// getPatientHistory) plus two sections the schema doesn't capture yet:
-// Allergies and Conditions/Diagnoses.
+// getPatientHistory) plus Allergies and Conditions/Diagnoses.
 //
-// Frontend-first, per the project's build order: allergies now persist to
-// Supabase (migration 0015 added patients.known_allergies, wired via
-// updatePatientAllergies). Conditions/diagnoses are still local component
-// state only -- no `conditions` table exists yet, that's the next backend
-// follow-up. This mirrors the same honest-placeholder pattern used
-// elsewhere in the project (e.g. AI Forecasting) rather than silently
-// pretending it persists.
+// Both allergies (migration 0015) and conditions (migration 0016) now
+// persist to Supabase. If migration 0016 hasn't been run yet, the
+// conditions calls below will error -- intentional, rather than silently
+// falling back to fake local-only state.
 //
 // This is also the single source that the Patient Portal's read-only
 // Medical Records page (src/pages/patient/PatientMedicalRecords.tsx) is
-// designed to mirror once allergies/conditions are wired to a real table.
+// designed to mirror.
 
 interface ConditionEntry {
   id: string;
   name: string;
-  diagnosedOn?: string;
+  diagnosedOn?: string | null;
 }
 
 export default function PatientMedicalRecord() {
@@ -39,6 +35,7 @@ export default function PatientMedicalRecord() {
   const [allergyInput, setAllergyInput] = useState('');
   const [conditions, setConditions] = useState<ConditionEntry[]>([]);
   const [conditionInput, setConditionInput] = useState('');
+  const [conditionsError, setConditionsError] = useState(false);
 
   useEffect(() => {
     if (!patientId) return;
@@ -51,6 +48,9 @@ export default function PatientMedicalRecord() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+    getConditions(patientId)
+      .then(setConditions)
+      .catch(() => setConditionsError(true)); // Likely means migration 0016 hasn't been run yet
   }, [patientId]);
 
   async function addAllergy() {
@@ -72,11 +72,25 @@ export default function PatientMedicalRecord() {
     await updatePatientAllergies(patientId, next);
   }
 
-  function addCondition() {
+  async function addCondition() {
     const value = conditionInput.trim();
-    if (!value) return;
-    setConditions((c) => [...c, { id: crypto.randomUUID(), name: value, diagnosedOn: new Date().toISOString().slice(0, 10) }]);
+    if (!value || !patientId) return;
     setConditionInput('');
+    try {
+      const created = await addConditionApi(patientId, value);
+      setConditions((c) => [...c, created]);
+    } catch {
+      setConditionsError(true);
+    }
+  }
+
+  async function removeCondition(id: string) {
+    try {
+      await removeConditionApi(id);
+      setConditions((list) => list.filter((x) => x.id !== id));
+    } catch {
+      setConditionsError(true);
+    }
   }
 
   if (loading) return <div className="text-body">Loading medical record…</div>;
@@ -136,7 +150,9 @@ export default function PatientMedicalRecord() {
           <Stethoscope size={18} />
           Conditions &amp; Diagnoses
         </p>
-        <p className="mt-1 text-xs text-body">Frontend-only for now — no `conditions` table exists yet; wire to Supabase once this shape is confirmed.</p>
+        <p className="mt-1 text-xs text-body">
+          {conditionsError ? 'Could not load conditions — confirm migration 0016 has been run.' : 'Persists to Supabase.'}
+        </p>
         <div className="mt-3 flex flex-col gap-2">
           {conditions.length === 0 && <span className="text-sm text-body">None recorded.</span>}
           {conditions.map((c) => (
@@ -144,7 +160,7 @@ export default function PatientMedicalRecord() {
               <span className="text-sm font-semibold text-ink">{c.name}</span>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-body">Since {c.diagnosedOn}</span>
-                <button type="button" onClick={() => setConditions((list) => list.filter((x) => x.id !== c.id))} aria-label={`Remove ${c.name}`} className="text-danger hover:opacity-70">
+                <button type="button" onClick={() => removeCondition(c.id)} aria-label={`Remove ${c.name}`} className="text-danger hover:opacity-70">
                   <Trash2 size={13} />
                 </button>
               </div>

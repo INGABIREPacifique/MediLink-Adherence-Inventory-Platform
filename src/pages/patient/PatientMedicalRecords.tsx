@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldAlert, Stethoscope, Pill } from 'lucide-react';
-import { getPatientHistory } from '../../services/supabasePatientHistoryService';
+import { getPatientHistory, getConditions, type ConditionRow } from '../../services/supabasePatientHistoryService';
 
 // Read-only mirror of the nurse-facing PatientMedicalRecord page
 // (src/pages/PatientMedicalRecord.tsx). No edit controls anywhere on this
@@ -14,14 +14,12 @@ import { getPatientHistory } from '../../services/supabasePatientHistoryService'
 // No separate export/sharing system invented here; visibility through the
 // portal itself is the mechanism, per explicit direction.
 //
-// Allergies are real as of migration 0015 (patients.known_allergies),
-// pulled via the same DEMO_PATIENT_ID pattern used in
-// PatientDischargeSummary until real patient login exists. Conditions and
-// the medication list below are still mock -- no `conditions` table yet,
-// and this page isn't wired to prescriptions yet either.
+// Allergies (migration 0015) and conditions (migration 0016) are both
+// real, pulled via the same DEMO_PATIENT_ID pattern used in
+// PatientDischargeSummary until real patient login exists. The
+// medication list below is still mock -- this page isn't wired to
+// prescriptions yet.
 const DEMO_PATIENT_ID = '44444444-4444-4444-4444-444444444444'; // Chantal Iribagiza, seeded with a full dose history
-
-const conditions = [{ name: 'Type 2 Diabetes', diagnosedOn: '2022-03-14' }];
 
 const medications = [
   { name: 'Rifampicin/Isoniazid', dosage: '150mg/75mg', frequency: 'Twice daily', status: 'In progress' },
@@ -30,11 +28,15 @@ const medications = [
 
 export default function PatientMedicalRecords() {
   const [allergies, setAllergies] = useState<string[]>([]);
+  const [conditions, setConditions] = useState<ConditionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPatientHistory(DEMO_PATIENT_ID)
-      .then((history) => setAllergies(history.patient.knownAllergies))
+    Promise.all([getPatientHistory(DEMO_PATIENT_ID), getConditions(DEMO_PATIENT_ID).catch(() => [])])
+      .then(([history, conditionRows]) => {
+        setAllergies(history.patient.knownAllergies);
+        setConditions(conditionRows);
+      })
       .finally(() => setLoading(false));
   }, []);
 

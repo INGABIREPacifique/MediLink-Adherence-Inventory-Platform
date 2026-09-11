@@ -169,6 +169,37 @@ export async function updatePatientContactPreferences(
   }
 }
 
+// Real conditions/diagnoses CRUD, backed by the conditions table
+// (migration 0016). Requires that migration to have been run -- if it
+// hasn't, these calls will error, which is preferable to silently
+// falling back to fake local-only state.
+export interface ConditionRow {
+  id: string;
+  name: string;
+  diagnosedOn: string | null;
+}
+
+export async function getConditions(patientId: string): Promise<ConditionRow[]> {
+  const { data, error } = await supabase.from('conditions').select('id, name, diagnosed_on').eq('patient_id', patientId).order('diagnosed_on', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((c) => ({ id: c.id, name: c.name, diagnosedOn: c.diagnosed_on }));
+}
+
+export async function addCondition(patientId: string, name: string): Promise<ConditionRow> {
+  const { data, error } = await supabase
+    .from('conditions')
+    .insert({ patient_id: patientId, name, diagnosed_on: new Date().toISOString().slice(0, 10) })
+    .select('id, name, diagnosed_on')
+    .single();
+  if (error || !data) throw error ?? new Error('Failed to add condition');
+  return { id: data.id, name: data.name, diagnosedOn: data.diagnosed_on };
+}
+
+export async function removeCondition(conditionId: string): Promise<void> {
+  const { error } = await supabase.from('conditions').delete().eq('id', conditionId);
+  if (error) throw error;
+}
+
 // Persists allergy edits made on the nurse-facing Medical Record page.
 // Real write as of migration 0015 -- previously this data only ever lived
 // in local component state and was lost on refresh.
