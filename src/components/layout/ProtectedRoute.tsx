@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth, ChwDemoProvider } from '../../lib/AuthContext';
-import Landing from '../../pages/Landing';
+import { useAuth, DemoAuthProvider } from '../../lib/AuthContext';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -12,16 +11,15 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!session) {
-    // CHW routes have no real login flow to hand out yet (no CHW-facing
-    // signup/credential distribution exists), which made the whole
-    // portal unreachable by anyone without a seeded staff account --
-    // a real problem for demoing this project. Bypassed here rather
-    // than building fake credentials, matching the same no-auth pattern
-    // already used for Patient Portal / Ministry / Public tiers.
-    if (location.pathname.startsWith('/chw')) {
-      return <ChwDemoProvider>{children}</ChwDemoProvider>;
-    }
-    return <Landing />;
+    // No real login flow exists to hand out to anyone reviewing/demoing
+    // this project who isn't an already-seeded staff account. Bypassed
+    // here rather than distributing real credentials, matching the same
+    // no-auth pattern already used for Patient Portal / Ministry /
+    // Public tiers. CHW routes get a 'chw' demo profile; every other
+    // staff route (nurse/admin) gets an 'admin' demo profile, since
+    // admin has the broadest visibility for reviewing the whole project.
+    const role = location.pathname.startsWith('/chw') ? 'chw' : 'admin';
+    return <DemoAuthProvider role={role}>{children}</DemoAuthProvider>;
   }
 
   return <>{children}</>;
