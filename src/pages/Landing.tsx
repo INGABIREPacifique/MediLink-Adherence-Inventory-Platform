@@ -3,14 +3,11 @@ import { Radio, Stethoscope, ShieldCheck, User, ArrowRight, Globe } from 'lucide
 
 // Fixes a real gap: Patient Portal and Ministry tier existed only as
 // hidden URLs (/patient, /ministry) nobody could discover -- no login
-// screen, no link anywhere in the app pointed to them.
-//
-// Staff & CHW portal login is real when someone actually has staff
-// credentials -- but since there's no way to hand real credentials to
-// anyone reviewing/demoing this project, ProtectedRoute bypasses it
-// entirely when there's no session, same as Patient Portal / Ministry /
-// Public. So in practice every card below is reachable without a real
-// account; "Sign In" still works for anyone who does have one.
+// screen, no link anywhere in the app pointed to them. This is the single
+// entry point that makes every part of the system visible and clearly
+// labeled, so it's obvious what's real (Staff & CHW, behind real Supabase
+// auth) vs. preview (Patient Portal, Ministry tier -- frontend-only mock
+// data, no real login exists yet for those user types).
 export default function Landing() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-bg px-4 py-10">
@@ -31,11 +28,10 @@ export default function Landing() {
           </span>
           <div>
             <p className="font-bold text-ink">Staff &amp; CHW Portal</p>
-            <p className="mt-1 text-sm text-body">Nurses, ward admins, and Community Health Workers. Real patient data.</p>
+            <p className="mt-1 text-sm text-body">Nurses, ward admins, and Community Health Workers. Real login, real patient data.</p>
           </div>
-          <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-navy-light">
-            <span className="rounded-full bg-success-bg px-2 py-0.5 text-xs text-success-text">Demo Access</span>
-            Sign In or Continue <ArrowRight size={14} />
+          <span className="mt-auto flex items-center gap-1 text-sm font-semibold text-navy-light">
+            Sign In <ArrowRight size={14} />
           </span>
         </Link>
 
@@ -50,20 +46,6 @@ export default function Landing() {
           <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-warning-text">
             <span className="rounded-full bg-warning-bg px-2 py-0.5 text-xs">Preview</span>
             No real login yet
-          </span>
-        </Link>
-
-        <Link to="/chw/tasks" className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:border-navy hover:shadow-md">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-[#d7e2ff] text-navy">
-            <Stethoscope size={18} />
-          </span>
-          <div>
-            <p className="font-bold text-ink">CHW Field App</p>
-            <p className="mt-1 text-sm text-body">Community Health Worker mobile tools. Real data, no login flow built yet for CHWs specifically.</p>
-          </div>
-          <span className="mt-auto flex items-center gap-2 text-sm font-semibold text-success-text">
-            <span className="rounded-full bg-success-bg px-2 py-0.5 text-xs">Demo Access</span>
-            No login required
           </span>
         </Link>
 
